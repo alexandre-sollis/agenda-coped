@@ -216,6 +216,7 @@
         eventosHoje.textContent = ativos;
 
         if (typeof reiniciarRolagem === "function") reiniciarRolagem();
+        if (typeof ajustarEscala === "function") ajustarEscala();
         if (typeof montarCarrossel === "function") montarCarrossel();
         if (typeof montarInfinita === "function") montarInfinita();
 
@@ -344,6 +345,8 @@
     var MODO_TABELA = "infinita";     // "infinita" | "carrossel" | "continua" | "nenhuma"
     if (MODO_TABELA === "infinita") document.body.className += " infinita";
     var TEMPO_PAGINA_MS = 10000;      // carrossel: tempo de cada página (10 s)
+    var LINHAS_MINIMAS = 3;           // pelo menos tantas linhas de evento visíveis na tela
+    var ESCALA_MINIMA = 0.5;          // até quanto o layout pode encolher para isso (0.5 = metade)
     var VELOCIDADE_PX_S = 20;   // pixels por segundo (maior = mais rápido)
     var PAUSA_FIM_MS = 1500;    // pausa ao chegar ao fim (0 = sem pausa)
 
@@ -674,6 +677,102 @@
         raf(quadroInf);
     }
 
+    /* ---------- pelo menos LINHAS_MINIMAS linhas visíveis ----------
+       Se a tela for baixa, o cabeçalho, os cartões, as letras e os
+       espaçamentos encolhem juntos, na proporção necessária, até que as
+       linhas mais altas caibam na área da tabela (sem passar de ESCALA_MINIMA). */
+
+    function px(v, f) {
+        return (Math.round(v * f * 10) / 10) + "px";
+    }
+
+    function aplicarEscalaTV(f) {
+        var est = document.getElementById("escalaTV");
+        if (!est) {
+            est = document.createElement("style");
+            est.id = "escalaTV";
+            document.getElementsByTagName("head")[0].appendChild(est);
+        }
+
+        if (f >= 0.999) {
+            est.textContent = "";
+            return;
+        }
+
+        var r = "";
+        r += "body.tv header{min-height:" + px(90, f) + "}";
+        r += "body.tv .logo{height:" + px(64, f) + "}";
+        r += "body.tv .logo-area h1{font-size:" + px(34, f) + "}";
+        r += "body.tv .logo-area p{font-size:" + px(16, f) + "}";
+        r += "body.tv #barraEvento{height:" + px(50, f) + ";font-size:" + px(35, f) + "}";
+        r += "body.tv .dashboard{padding:" + px(25, f) + " " + px(30, f) + "}";
+        r += "body.tv .stat-card{padding:" + px(22, f) + " " + px(28, f) + "}";
+        r += "body.tv .stat-card.card-gradient{padding:" + px(20, f) + "}";
+        r += "body.tv .stat-label,body.tv .stat-label2{font-size:" + px(28, f) + "}";
+        r += "body.tv .stat-value-lg{font-size:" + px(68, f) + "}";
+        r += "body.tv .table-container{margin:0 " + px(30, f) + " " + px(20, f) + "}";
+        r += "body.tv th{padding:" + px(18, f) + ";font-size:" + px(26, f) + "}";
+        r += "body.tv td{padding:" + px(16, f) + ";font-size:" + px(36, f) + "}";
+        r += "body.tv footer{height:" + px(55, f) + "}";
+        r += "body.tv #avisos{font-size:" + px(30, f) + "}";
+        r += "body.tv #erroTela{bottom:" + px(55, f) + ";font-size:" + px(26, f) + "}";
+        est.textContent = r;
+    }
+
+    // A tabela ocupa todo o espaço entre os cartões e o rodapé.
+    function ajustarAlturaContainer(cont) {
+        var rodape = document.querySelector("footer");
+        var topo = cont.getBoundingClientRect().top;
+        var base = rodape ? rodape.getBoundingClientRect().top : window.innerHeight;
+        var h = Math.max(base - topo - 16, 120);
+        cont.style.maxHeight = h + "px";
+    }
+
+    function maiorSoma(alturas, k) {
+        var melhor = 0;
+        for (var i = 0; i + k <= alturas.length; i++) {
+            var s = 0;
+            for (var j = 0; j < k; j++) s += alturas[i + j];
+            if (s > melhor) melhor = s;
+        }
+        return melhor;
+    }
+
+    function ajustarEscala() {
+        var cont = document.querySelector(".table-container");
+        var thead = cont ? cont.querySelector("thead") : null;
+        if (!cont || !thead) return;
+
+        var f = 1;
+        var guarda = 0;
+
+        while (guarda < 20) {
+            guarda++;
+            aplicarEscalaTV(f);
+            ajustarAlturaContainer(cont);
+            if (MODO_TABELA === "infinita") aplicarLarguras(cont, thead);
+
+            var n = tbody.rows.length;
+            if (!n) return;
+
+            var alturas = [];
+            var total = 0;
+            for (var i = 0; i < n; i++) {
+                var h = tbody.rows[i].offsetHeight;
+                alturas.push(h);
+                total += h;
+            }
+
+            var disp = alturaDisponivel(cont, thead);
+            var minimas = Math.min(LINHAS_MINIMAS, n);
+
+            if (total <= disp + 2 || maiorSoma(alturas, minimas) <= disp || f <= ESCALA_MINIMA) return;
+
+            f = Math.round((f - 0.05) * 100) / 100;
+            if (f < ESCALA_MINIMA) f = ESCALA_MINIMA;
+        }
+    }
+
     /* ---------- início ---------- */
 
     iniciarTicker();
@@ -693,7 +792,7 @@
         raf(quadro);
     } else if (MODO_TABELA === "carrossel") {
         setInterval(proximaPagina, TEMPO_PAGINA_MS);
-        window.addEventListener("resize", montarCarrossel);
+        window.addEventListener("resize", function () { desenhar(cache); });
     } else {
         // Sem rolagem automática: deixa a tabela rolável à mão (ex.: controle com ponteiro)
         var tabelaCont = document.querySelector(".table-container");
