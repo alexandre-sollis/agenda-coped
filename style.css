@@ -1059,3 +1059,18 @@ body.tv .stat-card.card-gradient:hover { transform: none; }
 #avisos { -webkit-animation: ticker 60s linear infinite; }
 #textoBarra { -webkit-animation: deslizar 18s linear infinite; }
 .evento-urgente { -webkit-animation: pulsar 1s infinite; }
+
+/* ==========================================================
+   ROLAGEM INFINITA (modo TV): o cabeçalho da tabela fica parado
+   e só o corpo da tabela rola. Técnica compatível com TVs antigas.
+========================================================== */
+body.infinita .table-container { overflow: hidden; }
+body.infinita table { display: block; }
+body.infinita thead { display: table; width: 100%; table-layout: fixed; }
+body.infinita tbody { display: block; position: relative; overflow: hidden; }
+body.infinita tr { display: table; width: 100%; table-layout: fixed; }
+body.infinita th:nth-child(1), body.infinita td:nth-child(1) { width: 7%; }
+body.infinita th:nth-child(2), body.infinita td:nth-child(2) { width: 7%; }
+body.infinita th:nth-child(3), body.infinita td:nth-child(3) { width: 8%; }
+body.infinita th:nth-child(5), body.infinita td:nth-child(5) { width: 12%; }
+body.infinita th:nth-child(7), body.infinita td:nth-child(7) { width: 22%; }
