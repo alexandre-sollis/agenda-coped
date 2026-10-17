@@ -1,0 +1,68 @@
+/* ==========================================================
+   tv-compat.css — carregar DEPOIS de style.css
+   Ajustes para navegadores de TV antigos e para o modo TV (?tv=1)
+========================================================== */
+
+/* 1) 'gap' em flexbox não existe em navegadores anteriores ao Chrome 84.
+      Aqui o espaçamento é refeito com margens (visual idêntico). */
+@media (min-width: 1101px) {
+
+    .dashboard { gap: 0; }
+    .dashboard > * + * { margin-left: 14px; }
+
+    .logo-area { gap: 0; }
+    .logo-area > * + * { margin-left: 18px; }
+
+    .stat-card { gap: 0; }
+    .stat-card > * + * { margin-left: 16px; }
+
+    .stat-left { gap: 0; }
+    .stat-left > * + * { margin-left: 10px; }
+
+    .dashboard-actions { gap: 0; }
+    .dashboard-actions > * + * { margin-top: 6px; }
+
+    .btn-novo-evento,
+    .btn-baixar-excel { gap: 0; }
+}
+
+/* 2) 'inset' não existe em navegadores anteriores ao Chrome 87 */
+.background,
+.alerta {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+/* 3) Modo TV (?tv=1): sem botões de edição, tabela rolando sozinha,
+      cabeçalho da tabela fixo durante a rolagem */
+body.tv .dashboard-actions { display: none !important; }
+
+body.tv .table-container {
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+}
+
+body.tv .table-container thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: #274562;
+}
+
+/* 4) Mensagem de erro visível na tela (substitui alert) */
+#erroTela {
+    display: none;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 55px;
+    z-index: 10000;
+    padding: 12px 24px;
+    background: #b51f32;
+    color: #fff;
+    font-size: 26px;
+    font-weight: 700;
+    text-align: center;
+}
