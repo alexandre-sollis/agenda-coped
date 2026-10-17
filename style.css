@@ -975,8 +975,8 @@ body.tv .table-container thead th {
    - barra do próximo evento à esquerda; logo + título à direita
    - logo + título + subtítulo numa linha só, sem quebrar nem
      invadir a borda
-   - a barra ocupa o espaço que sobra e corta o texto longo,
-     em vez de espremer o título
+   - a barra tem a largura do texto e só encolhe (cortando o texto)
+     se faltar espaço, em vez de espremer o título
 ========================================================== */
 header {
     height: auto;
@@ -985,14 +985,13 @@ header {
     align-items: center;
 }
 
+/* A barra tem a largura do próprio texto (como no desenho original).
+   Só encolhe — cortando o texto — se faltar espaço, para nunca
+   espremer o logo e o título. */
 #barraEvento {
-    flex: 1 1 0;
+    flex: 0 1 auto;
     min-width: 0;
-    height: 52px;
     margin-right: 32px;
-    padding: 0 16px;
-    border: 1px solid rgba(83, 202, 255, .45);
-    border-radius: 12px;
 }
 
 .logo-area {
