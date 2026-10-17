@@ -969,3 +969,82 @@ body.tv .table-container thead th {
     font-weight: 700;
     text-align: center;
 }
+
+/* ==========================================================
+   CABEÇALHO PADRONIZADO
+   - logo + título + subtítulo sempre alinhados à esquerda, numa linha
+   - o título nunca quebra em duas linhas nem invade a borda
+   - a barra do próximo evento ocupa o espaço que sobra, à direita,
+     e corta o texto longo em vez de espremer o título
+========================================================== */
+header {
+    height: auto;
+    min-height: 90px;
+    padding: 8px 40px;
+    align-items: center;
+}
+
+.logo-area {
+    order: -1;
+    flex: 0 0 auto;
+    align-items: center;
+}
+
+.logo {
+    height: 64px;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.logo-area h1 {
+    white-space: nowrap;
+    line-height: 1.15;
+}
+
+.logo-area p {
+    white-space: nowrap;
+    line-height: 1.2;
+    margin-top: 4px;
+}
+
+#barraEvento {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 52px;
+    margin-left: 32px;
+    margin-right: 0;
+    padding: 0 16px;
+    border: 1px solid rgba(83, 202, 255, .45);
+    border-radius: 12px;
+}
+
+@media (max-width: 1100px) {
+    header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px 16px;
+        gap: 8px;
+    }
+    .logo-area { justify-content: center; }
+    #barraEvento { margin-left: 0; width: 100%; flex: 0 0 auto; font-size: 24px; }
+    .logo-area h1 { font-size: clamp(18px, 3.4vw, 30px); }
+}
+
+@media (max-width: 650px) {
+    .logo-area h1,
+    .logo-area p { white-space: normal; }
+    .logo { height: 52px; }
+}
+
+/* ==========================================================
+   MODO TV: menos efeitos para a rolagem ficar fluida
+   (TVs têm processador fraco; sombras, desfoque e transições
+   em todos os elementos deixam a rolagem "travando")
+========================================================== */
+body.tv * { transition: none !important; }
+body.tv header,
+body.tv .alerta { -webkit-backdrop-filter: none; backdrop-filter: none; }
+body.tv .stat-card:hover,
+body.tv .stat-card.card-gradient:hover { transform: none; }
