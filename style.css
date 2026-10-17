@@ -1084,5 +1084,6 @@ body.infinita #agenda tr.periodo-manha { border-left-color: #44baff; }
 body.infinita #agenda tr.periodo-tarde { border-left-color: #ffb454; }
 body.infinita #agenda tr.periodo-noite { border-left-color: #b8a0ff; }
 body.infinita #agenda tr.periodo-integral { border-left-color: #52dfa0; }
+body.infinita #agenda thead tr { border-left-color: #274562; }   /* mesma cor do cabeçalho */
 body.infinita #agenda th,
 body.infinita #agenda td { word-wrap: break-word; overflow-wrap: break-word; }
