@@ -204,9 +204,24 @@ window.onerror = function(msg, src, line){
   mostrarFalha('Erro: ' + msg + ' (' + String(src).split('/').pop() + ':' + line + ')');
 };
 </script>
-<script nomodule>mostrarFalha('Navegador sem suporte a módulos ES');</script>
-
-<script type="module" src="app.js" onerror="mostrarFalha('Falha ao carregar app.js ou firebase.js')"></script>
+<!-- Modo TV (?tv=1): script simples, sem módulos e sem SDK do Firebase.
+     Uso normal (edição): app.js como módulo. -->
+<script>
+(function(){
+  var tv = window.location.search.indexOf("tv") !== -1;
+  var s = document.createElement("script");
+  if(tv){
+    s.src = "tv.js?v=1";
+  }else{
+    s.type = "module";
+    s.src = "app.js";
+  }
+  s.onerror = function(){
+    mostrarFalha("Falha ao carregar " + (tv ? "tv.js" : "app.js ou firebase.js"));
+  };
+  document.body.appendChild(s);
+})();
+</script>
 
 </body>
 
