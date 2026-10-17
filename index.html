@@ -16,8 +16,8 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="style.css?v=16">
-<link rel="stylesheet" href="tv-compat.css?v=16">
+<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="tv-compat.css?v=17">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -38,7 +38,7 @@
         </div>
         <div>
             <h1>DRE CÁCERES - COPED</h1>
-            <p>Agenda Institucional | Alexandre Oliveira</p>
+            <p>Agenda Institucional criado por Alexandre Oliveira</p>
         </div>
     </div>
 </header>
@@ -211,10 +211,10 @@ window.onerror = function(msg, src, line){
   var tv = window.location.search.indexOf("tv") !== -1;
   var s = document.createElement("script");
   if(tv){
-    s.src = "tv.js?v=16";
+    s.src = "tv.js?v=17";
   }else{
     s.type = "module";
-    s.src = "app.js?v=16";
+    s.src = "app.js?v=17";
   }
   s.onerror = function(){
     mostrarFalha("Falha ao carregar " + (tv ? "tv.js" : "app.js ou firebase.js"));
