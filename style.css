@@ -1063,14 +1063,26 @@ body.tv .stat-card.card-gradient:hover { transform: none; }
 /* ==========================================================
    ROLAGEM INFINITA (modo TV): o cabeçalho da tabela fica parado
    e só o corpo da tabela rola. Técnica compatível com TVs antigas.
+   As larguras das colunas são calculadas pelo tv.js (a partir do
+   conteúdo), para que nenhum texto saia da célula.
 ========================================================== */
 body.infinita .table-container { overflow: hidden; }
-body.infinita table { display: block; }
-body.infinita thead { display: table; width: 100%; table-layout: fixed; }
-body.infinita tbody { display: block; position: relative; overflow: hidden; }
-body.infinita tr { display: table; width: 100%; table-layout: fixed; }
-body.infinita th:nth-child(1), body.infinita td:nth-child(1) { width: 7%; }
-body.infinita th:nth-child(2), body.infinita td:nth-child(2) { width: 7%; }
-body.infinita th:nth-child(3), body.infinita td:nth-child(3) { width: 8%; }
-body.infinita th:nth-child(5), body.infinita td:nth-child(5) { width: 12%; }
-body.infinita th:nth-child(7), body.infinita td:nth-child(7) { width: 22%; }
+body.infinita #agenda { display: block; border-collapse: separate; border-spacing: 0; }
+body.infinita #agenda thead { display: table; width: 100%; table-layout: fixed; }
+body.infinita #agenda tbody { display: block; position: relative; overflow: hidden; }
+body.infinita #agenda tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-left: 8px solid transparent;   /* mesma largura em todas as linhas e no cabeçalho */
+}
+/* cor da faixa à esquerda (o período vem por cima de "hoje", como no original) */
+body.infinita #agenda tr.evento-hoje { border-left-color: #ffd166; }
+body.infinita #agenda tr.periodo-manha { border-left-color: #44baff; }
+body.infinita #agenda tr.periodo-tarde { border-left-color: #ffb454; }
+body.infinita #agenda tr.periodo-noite { border-left-color: #b8a0ff; }
+body.infinita #agenda tr.periodo-integral { border-left-color: #52dfa0; }
+body.infinita #agenda th,
+body.infinita #agenda td { word-wrap: break-word; overflow-wrap: break-word; }
