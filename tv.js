@@ -331,7 +331,7 @@
        cabem na tela, não rola. Ajuste a velocidade abaixo. */
 
     var VELOCIDADE_PX_S = 0;   // pixels por segundo (maior = mais rápido)
-    var PAUSA_FIM_MS = 1500;    // pausa ao chegar ao fim (0 = sem pausa)
+    var PAUSA_FIM_MS = 0;    // pausa ao chegar ao fim (0 = sem pausa)
 
     var pos = 0;
     var ultimoQuadro = 0;
