@@ -541,6 +541,49 @@
         return max - 2 - (thead ? thead.offsetHeight : 0);
     }
 
+    /* Mede as colunas a partir do conteúdo (como numa tabela normal) e fixa as
+       larguras em pixels no cabeçalho e em todas as linhas. Assim as colunas
+       ficam alinhadas e nenhum texto sai da célula. A coluna 6 ("Ações")
+       fica com o que sobrar. */
+    function aplicarLarguras(cont, thead) {
+        var estilo = document.getElementById("larguraColunas");
+        if (!estilo) {
+            estilo = document.createElement("style");
+            estilo.id = "larguraColunas";
+            document.getElementsByTagName("head")[0].appendChild(estilo);
+        }
+        estilo.textContent = "";
+
+        var m = document.createElement("table");
+        m.style.cssText = "position:absolute;left:-99999px;top:0;visibility:hidden;" +
+            "table-layout:auto;border-collapse:separate;border-spacing:0;width:" +
+            Math.max(cont.clientWidth - 8, 300) + "px";
+        m.appendChild(thead.cloneNode(true));
+
+        var mb = document.createElement("tbody");
+        var i, j;
+        for (i = 0; i < tbody.rows.length; i++) mb.appendChild(tbody.rows[i].cloneNode(true));
+        m.appendChild(mb);
+        document.body.appendChild(m);
+
+        var cels = m.rows[0].cells;
+        var larguras = [];
+        for (j = 0; j < cels.length; j++) larguras.push(cels[j].getBoundingClientRect().width);
+        document.body.removeChild(m);
+
+        var cols = [1, 2, 3, 5, 7];
+        var regras = "";
+        for (j = 0; j < cols.length; j++) {
+            var w = larguras[cols[j] - 1];
+            if (w > 0) {
+                regras += "body.infinita #agenda th:nth-child(" + cols[j] + "), " +
+                    "body.infinita #agenda td:nth-child(" + cols[j] + ") { width: " +
+                    (Math.ceil(w * 100) / 100) + "px; }\n";
+            }
+        }
+        estilo.textContent = regras;
+    }
+
     function montarInfinita() {
         if (MODO_TABELA !== "infinita") return;
 
@@ -556,7 +599,9 @@
         tbody.style.height = "auto";
 
         var n = tbody.rows.length;
-        if (!n) return;
+        if (!n || !thead) return;
+
+        aplicarLarguras(cont, thead);
 
         var disp = alturaDisponivel(cont, thead);
         var total = tbody.rows[n - 1].offsetTop + tbody.rows[n - 1].offsetHeight - tbody.rows[0].offsetTop;
@@ -611,6 +656,9 @@
     if (MODO_TABELA === "infinita") {
         raf(quadroInf);
         window.addEventListener("resize", function () { desenhar(cache); });
+        if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+            document.fonts.ready.then(function () { if (cache.length) desenhar(cache); });
+        }
     } else if (MODO_TABELA === "continua") {
         raf(quadro);
     } else if (MODO_TABELA === "carrossel") {
