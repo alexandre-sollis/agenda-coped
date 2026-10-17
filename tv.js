@@ -247,12 +247,10 @@
             }
         }
 
-        if (!proximo) {
-            textoBarra.textContent = "Nenhum evento programado.";
-            return;
-        }
+        var novoTexto = proximo ? (proximo.acao + " • " + proximo.horario) : "Nenhum evento programado.";
+        if (textoBarra.textContent !== novoTexto) textoBarra.textContent = novoTexto;
 
-        textoBarra.textContent = proximo.acao + " • " + proximo.horario;
+        if (!proximo) return;
 
         if (menor <= 300000 && proximo._tr) {
             addClass(proximo._tr, "evento-urgente");
@@ -500,17 +498,26 @@
         var janela = avisos.parentNode;
         var x = null;
         var ultimo = 0;
+        var larg = 0;
+        var jan = 0;
+        var medidoEm = 0;
 
         avisos.style.animation = "none";
         avisos.style.webkitAnimation = "none";
         avisos.style.paddingLeft = "0";
-        avisos.style.position = "relative";
+        avisos.style.webkitBackfaceVisibility = "hidden";
         avisos.textContent = "Bem-vindos à Agenda Institucional da DRE Cáceres.";
 
         function passo() {
-            var larg = avisos.offsetWidth;
-            var jan = janela.clientWidth;
             var agora = new Date().getTime();
+
+            // mede no máximo 1 vez por segundo (medir a cada quadro deixa tudo lento)
+            if (agora - medidoEm > 1000) {
+                larg = avisos.offsetWidth;
+                jan = janela.clientWidth;
+                medidoEm = agora;
+            }
+
             var dt = ultimo ? Math.min(agora - ultimo, 250) : 0;
             ultimo = agora;
 
@@ -518,7 +525,9 @@
             x -= VELOCIDADE_TICKER_PX_S * dt / 1000;
             if (x < -larg) x = jan;
 
-            avisos.style.left = Math.round(x) + "px";
+            var v = "translate3d(" + x + "px,0,0)";
+            avisos.style.webkitTransform = v;
+            avisos.style.transform = v;
             raf(passo);
         }
 
@@ -528,7 +537,9 @@
     /* ---------- rolagem infinita ----------
        O cabeçalho da tabela fica parado e só as linhas rolam, sem parar.
        Para o ciclo ser perfeito, as linhas são duplicadas: quando a rolagem
-       chega ao fim da primeira cópia, volta ao começo sem salto visível. */
+       chega ao fim da primeira cópia, volta ao começo sem salto visível.
+       O movimento é feito por transform (acelerado pela placa de vídeo),
+       o que evita o "tremido" da rolagem comum em TVs antigas. */
 
     var infAtiva = false;
     var infPos = 0;
@@ -584,19 +595,26 @@
         estilo.textContent = regras;
     }
 
+    function moverTbody(y) {
+        var v = "translate3d(0," + (-y) + "px,0)";
+        tbody.style.webkitTransform = v;
+        tbody.style.transform = v;
+    }
+
     function montarInfinita() {
         if (MODO_TABELA !== "infinita") return;
 
         var cont = document.querySelector(".table-container");
+        var tabela = document.getElementById("agenda");
         var thead = cont ? cont.querySelector("thead") : null;
-        if (!cont) return;
+        if (!cont || !tabela) return;
 
         infAtiva = false;
         infPos = 0;
         infPeriodo = 0;
         infUltimo = 0;
-        tbody.scrollTop = 0;
-        tbody.style.height = "auto";
+        moverTbody(0);
+        tabela.style.height = "auto";
 
         var n = tbody.rows.length;
         if (!n || !thead) return;
@@ -608,26 +626,38 @@
 
         if (total <= disp + 2) return;   // tudo cabe na tela: não precisa rolar
 
-        tbody.style.height = disp + "px";
+        // Só a área abaixo do cabeçalho rola: o corpo da tabela é movido por
+        // transform e o cabeçalho, opaco e por cima, esconde as linhas que
+        // passam por baixo dele.
+        tabela.style.height = (thead.offsetHeight + disp) + "px";
 
-        // Com número ímpar de linhas, o zebrado inverteria na emenda;
-        // por isso usa-se um ciclo de 2 cópias nesse caso.
-        var extra = (n % 2 === 0) ? 1 : 2;
+        var i, j;
+
+        // Número ímpar de linhas: acrescenta uma linha em branco (separando o fim
+        // do começo da lista) para o zebrado não inverter na emenda.
+        if (n % 2 === 1) {
+            var sep = document.createElement("tr");
+            for (j = 0; j < 7; j++) {
+                var td = document.createElement("td");
+                td.textContent = "\u00a0";
+                sep.appendChild(td);
+            }
+            tbody.appendChild(sep);
+            n += 1;
+        }
+
         var originais = [];
-        var i, c;
         for (i = 0; i < n; i++) originais.push(tbody.rows[i]);
 
         for (i = 0; i < cache.length; i++) cache[i]._clones = [];
 
-        for (c = 0; c < extra; c++) {
-            for (i = 0; i < n; i++) {
-                var copia = originais[i].cloneNode(true);
-                tbody.appendChild(copia);
-                if (cache[i]) cache[i]._clones.push(copia);
-            }
+        for (i = 0; i < n; i++) {
+            var copia = originais[i].cloneNode(true);
+            tbody.appendChild(copia);
+            if (cache[i]) cache[i]._clones.push(copia);
         }
 
-        infPeriodo = tbody.rows[extra === 1 ? n : 2 * n].offsetTop - tbody.rows[0].offsetTop;
+        infPeriodo = tbody.rows[n].offsetTop - tbody.rows[0].offsetTop;
         infAtiva = infPeriodo > 0;
     }
 
@@ -639,7 +669,7 @@
 
             infPos += VELOCIDADE_PX_S * dt / 1000;
             if (infPos >= infPeriodo) infPos -= infPeriodo;
-            tbody.scrollTop = infPos;
+            moverTbody(infPos);
         }
         raf(quadroInf);
     }
