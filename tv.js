@@ -215,6 +215,8 @@
         totalEventos.textContent = lista.length;
         eventosHoje.textContent = ativos;
 
+        if (typeof reiniciarRolagem === "function") reiniciarRolagem();
+
         atualizarBarra();
     }
 
@@ -323,25 +325,61 @@
         xhr.send();
     }
 
-    /* ---------- rolagem automática ---------- */
+    /* ---------- rolagem automática (contínua e suave) ----------
+       Começa na hora, sem pausa no topo. Ao chegar ao fim espera um
+       instante (PAUSA_FIM_MS) e recomeça do topo. Se todas as linhas
+       cabem na tela, não rola. Ajuste a velocidade abaixo. */
 
-    function rolar() {
+    var VELOCIDADE_PX_S = 40;   // pixels por segundo (maior = mais rápido)
+    var PAUSA_FIM_MS = 1500;    // pausa ao chegar ao fim (0 = sem pausa)
+
+    var pos = 0;
+    var ultimoQuadro = 0;
+    var pausaAte = 0;
+
+    function raf(f) {
+        var r = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
+        if (r) return r.call(window, f);
+        return setTimeout(function () { f(new Date().getTime()); }, 16);
+    }
+
+    function reiniciarRolagem() {
         var cont = document.querySelector(".table-container");
-        if (!cont) return;
+        pos = 0;
+        pausaAte = 0;
+        ultimoQuadro = 0;
+        if (cont) cont.scrollTop = 0;
+    }
 
-        var max = cont.scrollHeight - cont.clientHeight;
+    function quadro() {
+        var cont = document.querySelector(".table-container");
 
-        if (max <= 4) {
-            cont.scrollTop = 0;
-            return;
+        if (cont) {
+            cont.style.scrollBehavior = "auto";
+
+            var max = cont.scrollHeight - cont.clientHeight;
+            var agora = new Date().getTime();
+            var dt = ultimoQuadro ? Math.min(agora - ultimoQuadro, 250) : 0;
+            ultimoQuadro = agora;
+
+            if (max <= 4) {
+                pos = 0;
+                cont.scrollTop = 0;
+            } else if (agora >= pausaAte) {
+                if (pausaAte) {      // terminou a pausa do fim: volta ao topo
+                    pausaAte = 0;
+                    pos = 0;
+                }
+                pos += VELOCIDADE_PX_S * dt / 1000;
+                if (pos >= max) {
+                    pos = max;
+                    pausaAte = agora + PAUSA_FIM_MS;
+                }
+                cont.scrollTop = pos;
+            }
         }
 
-        if (cont.scrollTop >= max - 4) {
-            cont.scrollTop = 0;
-        } else {
-            var passo = Math.max(cont.clientHeight - 100, 120);
-            cont.scrollTop = Math.min(cont.scrollTop + passo, max);
-        }
+        raf(quadro);
     }
 
     /* ---------- início ---------- */
@@ -351,7 +389,7 @@
 
     setInterval(carregar, INTERVALO_MS);
     setInterval(atualizarBarra, 5000);
-    setInterval(rolar, 12000);
+    raf(quadro);
     setInterval(carregarNoticias, 10 * 60 * 1000);
 
     // Recarrega a página a cada 15 minutos (evita acúmulo de memória na TV)
