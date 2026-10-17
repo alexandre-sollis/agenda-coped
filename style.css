@@ -1067,9 +1067,17 @@ body.tv .stat-card.card-gradient:hover { transform: none; }
    conteúdo), para que nenhum texto saia da célula.
 ========================================================== */
 body.infinita .table-container { overflow: hidden; }
-body.infinita #agenda { display: block; border-collapse: separate; border-spacing: 0; }
-body.infinita #agenda thead { display: table; width: 100%; table-layout: fixed; }
-body.infinita #agenda tbody { display: block; position: relative; overflow: hidden; }
+body.infinita #agenda { display: block; position: relative; overflow: hidden; border-collapse: separate; border-spacing: 0; }
+body.infinita #agenda thead { display: table; width: 100%; table-layout: fixed; position: relative; z-index: 2; }
+body.infinita #agenda tbody {
+    display: block;
+    position: relative;
+    z-index: 1;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+}
 body.infinita #agenda tr {
     display: table;
     width: 100%;
