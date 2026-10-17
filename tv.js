@@ -217,6 +217,7 @@
 
         if (typeof reiniciarRolagem === "function") reiniciarRolagem();
         if (typeof montarCarrossel === "function") montarCarrossel();
+        if (typeof montarInfinita === "function") montarInfinita();
 
         atualizarBarra();
     }
@@ -232,6 +233,9 @@
             var it = cache[i];
 
             if (it._tr) removeClass(it._tr, "evento-urgente");
+            if (it._clones) {
+                for (var k = 0; k < it._clones.length; k++) removeClass(it._clones[k], "evento-urgente");
+            }
 
             var ini = converterDataHora(it.inicio, it.horario);
             if (!ini) continue;
@@ -250,7 +254,12 @@
 
         textoBarra.textContent = proximo.acao + " • " + proximo.horario;
 
-        if (menor <= 300000 && proximo._tr) addClass(proximo._tr, "evento-urgente");
+        if (menor <= 300000 && proximo._tr) {
+            addClass(proximo._tr, "evento-urgente");
+            if (proximo._clones) {
+                for (var m = 0; m < proximo._clones.length; m++) addClass(proximo._clones[m], "evento-urgente");
+            }
+        }
     }
 
     /* ---------- busca da agenda ---------- */
@@ -327,13 +336,15 @@
     }
 
     /* ---------- rolagem automática (contínua e suave) ----------
-       Modo escolhido em MODO_TABELA: "carrossel" (páginas que trocam sozinhas),
-       "continua" (rolagem suave) ou "nenhuma".
+       Modo escolhido em MODO_TABELA: "infinita" (rola sem parar, em ciclo),
+       "carrossel" (páginas que trocam sozinhas), "continua" (desce e volta
+       ao topo) ou "nenhuma".
        Começa na hora, sem pausa no topo. Ao chegar ao fim espera um
        instante (PAUSA_FIM_MS) e recomeça do topo. Se todas as linhas
        cabem na tela, não rola. Ajuste a velocidade abaixo. */
 
-    var MODO_TABELA = "carrossel";    // "carrossel" | "continua" | "nenhuma"
+    var MODO_TABELA = "infinita";     // "infinita" | "carrossel" | "continua" | "nenhuma"
+    if (MODO_TABELA === "infinita") document.body.className += " infinita";
     var TEMPO_PAGINA_MS = 10000;      // carrossel: tempo de cada página (10 s)
     var VELOCIDADE_PX_S = 20;   // pixels por segundo (maior = mais rápido)
     var PAUSA_FIM_MS = 1500;    // pausa ao chegar ao fim (0 = sem pausa)
@@ -514,6 +525,80 @@
         raf(passo);
     }
 
+    /* ---------- rolagem infinita ----------
+       O cabeçalho da tabela fica parado e só as linhas rolam, sem parar.
+       Para o ciclo ser perfeito, as linhas são duplicadas: quando a rolagem
+       chega ao fim da primeira cópia, volta ao começo sem salto visível. */
+
+    var infAtiva = false;
+    var infPos = 0;
+    var infPeriodo = 0;
+    var infUltimo = 0;
+
+    function alturaDisponivel(cont, thead) {
+        var max = parseFloat(window.getComputedStyle(cont).maxHeight);
+        if (isNaN(max)) max = window.innerHeight - 360;
+        return max - 2 - (thead ? thead.offsetHeight : 0);
+    }
+
+    function montarInfinita() {
+        if (MODO_TABELA !== "infinita") return;
+
+        var cont = document.querySelector(".table-container");
+        var thead = cont ? cont.querySelector("thead") : null;
+        if (!cont) return;
+
+        infAtiva = false;
+        infPos = 0;
+        infPeriodo = 0;
+        infUltimo = 0;
+        tbody.scrollTop = 0;
+        tbody.style.height = "auto";
+
+        var n = tbody.rows.length;
+        if (!n) return;
+
+        var disp = alturaDisponivel(cont, thead);
+        var total = tbody.rows[n - 1].offsetTop + tbody.rows[n - 1].offsetHeight - tbody.rows[0].offsetTop;
+
+        if (total <= disp + 2) return;   // tudo cabe na tela: não precisa rolar
+
+        tbody.style.height = disp + "px";
+
+        // Com número ímpar de linhas, o zebrado inverteria na emenda;
+        // por isso usa-se um ciclo de 2 cópias nesse caso.
+        var extra = (n % 2 === 0) ? 1 : 2;
+        var originais = [];
+        var i, c;
+        for (i = 0; i < n; i++) originais.push(tbody.rows[i]);
+
+        for (i = 0; i < cache.length; i++) cache[i]._clones = [];
+
+        for (c = 0; c < extra; c++) {
+            for (i = 0; i < n; i++) {
+                var copia = originais[i].cloneNode(true);
+                tbody.appendChild(copia);
+                if (cache[i]) cache[i]._clones.push(copia);
+            }
+        }
+
+        infPeriodo = tbody.rows[extra === 1 ? n : 2 * n].offsetTop - tbody.rows[0].offsetTop;
+        infAtiva = infPeriodo > 0;
+    }
+
+    function quadroInf() {
+        if (infAtiva) {
+            var agora = new Date().getTime();
+            var dt = infUltimo ? Math.min(agora - infUltimo, 250) : 0;
+            infUltimo = agora;
+
+            infPos += VELOCIDADE_PX_S * dt / 1000;
+            if (infPos >= infPeriodo) infPos -= infPeriodo;
+            tbody.scrollTop = infPos;
+        }
+        raf(quadroInf);
+    }
+
     /* ---------- início ---------- */
 
     iniciarTicker();
@@ -523,7 +608,10 @@
     setInterval(carregar, INTERVALO_MS);
     setInterval(atualizarBarra, 5000);
 
-    if (MODO_TABELA === "continua") {
+    if (MODO_TABELA === "infinita") {
+        raf(quadroInf);
+        window.addEventListener("resize", function () { desenhar(cache); });
+    } else if (MODO_TABELA === "continua") {
         raf(quadro);
     } else if (MODO_TABELA === "carrossel") {
         setInterval(proximaPagina, TEMPO_PAGINA_MS);
