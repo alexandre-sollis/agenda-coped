@@ -216,6 +216,7 @@
         eventosHoje.textContent = ativos;
 
         if (typeof reiniciarRolagem === "function") reiniciarRolagem();
+        if (typeof montarCarrossel === "function") montarCarrossel();
 
         atualizarBarra();
     }
@@ -316,7 +317,7 @@
                 var titulos = [];
                 for (var i = 0; i < d.items.length && titulos.length < 8; i++) {
                     var t = String(d.items[i].title || "").trim();
-                    if (t && manchetePermitida(t)) titulos.push("📰 " + t);
+                    if (t && manchetePermitida(t)) titulos.push(t);
                 }
                 if (titulos.length) avisos.textContent = titulos.join("     •     ");
             } catch (e) { /* mantém o texto atual do rodapé */ }
@@ -326,12 +327,16 @@
     }
 
     /* ---------- rolagem automática (contínua e suave) ----------
+       Modo escolhido em MODO_TABELA: "carrossel" (páginas que trocam sozinhas),
+       "continua" (rolagem suave) ou "nenhuma".
        Começa na hora, sem pausa no topo. Ao chegar ao fim espera um
        instante (PAUSA_FIM_MS) e recomeça do topo. Se todas as linhas
        cabem na tela, não rola. Ajuste a velocidade abaixo. */
 
-    var VELOCIDADE_PX_S = 5;   // pixels por segundo (maior = mais rápido)
-    var PAUSA_FIM_MS = 20;    // pausa ao chegar ao fim (0 = sem pausa)
+    var MODO_TABELA = "carrossel";    // "carrossel" | "continua" | "nenhuma"
+    var TEMPO_PAGINA_MS = 10000;      // carrossel: tempo de cada página (10 s)
+    var VELOCIDADE_PX_S = 20;   // pixels por segundo (maior = mais rápido)
+    var PAUSA_FIM_MS = 1500;    // pausa ao chegar ao fim (0 = sem pausa)
 
     var pos = 0;
     var ultimoQuadro = 0;
@@ -348,7 +353,7 @@
         pos = 0;
         pausaAte = 0;
         ultimoQuadro = 0;
-        if (cont) cont.scrollTop = 0;
+        if (cont && MODO_TABELA === "continua") cont.scrollTop = 0;
     }
 
     function quadro() {
@@ -382,14 +387,153 @@
         raf(quadro);
     }
 
+    /* ---------- carrossel de páginas ----------
+       Divide a tabela em páginas que cabem na tela e troca de página
+       sozinho (com um fade rápido), com bolinhas indicando a página. */
+
+    var ALTURA_DOTS = 36;
+    var paginas = [];
+    var paginaAtual = 0;
+    var dotsEl = document.getElementById("paginationDots");
+
+    function atualizarDots() {
+        if (!dotsEl) return;
+        dotsEl.innerHTML = "";
+        if (paginas.length <= 1) {
+            dotsEl.style.display = "none";
+            return;
+        }
+        dotsEl.style.cssText = "display:block;text-align:center;padding:9px 0;line-height:1;";
+        for (var i = 0; i < paginas.length; i++) {
+            var d = document.createElement("span");
+            d.style.cssText = "display:inline-block;width:14px;height:14px;margin:0 7px;border-radius:50%;background:" +
+                (i === paginaAtual ? "#56d7ff" : "rgba(255,255,255,.28)");
+            dotsEl.appendChild(d);
+        }
+    }
+
+    function mostrarPagina(n) {
+        paginaAtual = n;
+        for (var p = 0; p < paginas.length; p++) {
+            for (var r = 0; r < paginas[p].length; r++) {
+                paginas[p][r].style.display = (p === n) ? "" : "none";
+            }
+        }
+        atualizarDots();
+    }
+
+    function montarCarrossel() {
+        if (MODO_TABELA !== "carrossel") return;
+
+        var cont = document.querySelector(".table-container");
+        if (!cont) return;
+
+        var linhas = [];
+        var i;
+        for (i = 0; i < tbody.rows.length; i++) {
+            tbody.rows[i].style.display = "";
+            linhas.push(tbody.rows[i]);
+        }
+
+        if (dotsEl) dotsEl.style.display = "none";
+        cont.style.overflowY = "hidden";
+        paginas = [];
+        paginaAtual = 0;
+
+        if (!linhas.length || cont.scrollHeight <= cont.clientHeight + 2) {
+            paginas = [linhas];       // tudo cabe: uma página só, sem trocar
+            atualizarDots();
+            return;
+        }
+
+        var thead = cont.querySelector("thead");
+        var capacidade = cont.clientHeight - (thead ? thead.offsetHeight : 0) - ALTURA_DOTS;
+        var atual = [];
+        var soma = 0;
+
+        for (i = 0; i < linhas.length; i++) {
+            var h = linhas[i].offsetHeight;
+            if (atual.length && soma + h > capacidade) {
+                paginas.push(atual);
+                atual = [];
+                soma = 0;
+            }
+            atual.push(linhas[i]);
+            soma += h;
+        }
+        if (atual.length) paginas.push(atual);
+
+        mostrarPagina(0);
+    }
+
+    function proximaPagina() {
+        if (MODO_TABELA !== "carrossel" || paginas.length <= 1) return;
+
+        tbody.style.setProperty("transition", "opacity .35s", "important");
+        tbody.style.opacity = "0";
+
+        setTimeout(function () {
+            mostrarPagina((paginaAtual + 1) % paginas.length);
+            tbody.style.opacity = "1";
+        }, 380);
+    }
+
+    /* ---------- faixa de notícias (ticker) em JavaScript ----------
+       Não depende de animação CSS (TVs antigas podem não rodá-la). */
+
+    var VELOCIDADE_TICKER_PX_S = 75;
+
+    function iniciarTicker() {
+        if (!avisos) return;
+
+        var janela = avisos.parentNode;
+        var x = null;
+        var ultimo = 0;
+
+        avisos.style.animation = "none";
+        avisos.style.webkitAnimation = "none";
+        avisos.style.paddingLeft = "0";
+        avisos.style.position = "relative";
+        avisos.textContent = "Bem-vindos à Agenda Institucional da DRE Cáceres.";
+
+        function passo() {
+            var larg = avisos.offsetWidth;
+            var jan = janela.clientWidth;
+            var agora = new Date().getTime();
+            var dt = ultimo ? Math.min(agora - ultimo, 250) : 0;
+            ultimo = agora;
+
+            if (x === null) x = jan;
+            x -= VELOCIDADE_TICKER_PX_S * dt / 1000;
+            if (x < -larg) x = jan;
+
+            avisos.style.left = Math.round(x) + "px";
+            raf(passo);
+        }
+
+        raf(passo);
+    }
+
     /* ---------- início ---------- */
 
+    iniciarTicker();
     carregar();
     carregarNoticias();
 
     setInterval(carregar, INTERVALO_MS);
     setInterval(atualizarBarra, 5000);
-    raf(quadro);
+
+    if (MODO_TABELA === "continua") {
+        raf(quadro);
+    } else if (MODO_TABELA === "carrossel") {
+        setInterval(proximaPagina, TEMPO_PAGINA_MS);
+        window.addEventListener("resize", montarCarrossel);
+    } else {
+        // Sem rolagem automática: deixa a tabela rolável à mão (ex.: controle com ponteiro)
+        var tabelaCont = document.querySelector(".table-container");
+        if (tabelaCont) tabelaCont.style.overflowY = "auto";
+    }
+
     setInterval(carregarNoticias, 10 * 60 * 1000);
 
     // Recarrega a página a cada 15 minutos (evita acúmulo de memória na TV)
