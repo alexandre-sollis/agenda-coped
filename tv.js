@@ -330,7 +330,7 @@
        instante (PAUSA_FIM_MS) e recomeça do topo. Se todas as linhas
        cabem na tela, não rola. Ajuste a velocidade abaixo. */
 
-    var VELOCIDADE_PX_S = 2;   // pixels por segundo (maior = mais rápido)
+    var VELOCIDADE_PX_S = 200;   // pixels por segundo (maior = mais rápido)
     var PAUSA_FIM_MS = 1500;    // pausa ao chegar ao fim (0 = sem pausa)
 
     var pos = 0;
