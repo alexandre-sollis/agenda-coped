@@ -95,6 +95,12 @@
         return d;
     }
 
+    // Para eventos de hoje: sem horário vem primeiro; depois por horário.
+    function chaveHoraDia(item) {
+        var h = lerHora(item.horario);
+        return h ? h.h * 60 + h.min : -1;
+    }
+
     function chaveHora(item) {
         var t = lerHora(item.horario);
         return t ? t.h * 60 + t.min : 9999;
@@ -152,6 +158,15 @@
             var hojeB = iB && fB && hoje >= iB && hoje <= fB;
             if (hojeA && !hojeB) return -1;
             if (!hojeA && hojeB) return 1;
+
+            if (hojeA && hojeB) {
+                // eventos de hoje: por horário (os de dia inteiro primeiro)
+                var kA = chaveHoraDia(a), kB = chaveHoraDia(b);
+                if (kA !== kB) return kA - kB;
+                var dI = iA.getTime() - iB.getTime();
+                if (dI !== 0) return dI;
+                return a._i - b._i;
+            }
 
             var futA = iA && iA >= hoje;
             var futB = iB && iB >= hoje;
@@ -223,11 +238,58 @@
         atualizarBarra();
     }
 
-    /* ---------- barra do próximo evento ---------- */
+    /* ---------- barra do próximo evento ----------
+       O "próximo evento" é o primeiro da tabela que ainda não terminou:
+       - com horário: a próxima ocorrência (hoje, se ainda não passou; senão
+         o próximo dia do período);
+       - sem horário (dia inteiro / só período): vale desde o início do dia e
+         continua valendo durante todo o período do evento. */
+
+    function dataMaisDias(d, dias) {
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate() + dias);
+    }
+
+    function proximaOcorrencia(it, agora, hoje) {
+        var dIni = converterData(it.inicio);
+        if (!dIni) return null;
+        var dFim = converterData(it.fim) || dIni;
+        var hora = lerHora(it.horario);
+        var base, quando;
+
+        if (!hora) {
+            // sem horário: se já começou, vale "hoje" enquanto o período durar
+            if (dFim < hoje) return null;
+            base = dIni > hoje ? dIni : hoje;
+            return { quando: base, temHora: false };
+        }
+
+        base = dIni > hoje ? dIni : (dFim >= hoje ? hoje : null);
+        if (!base) return null;
+
+        quando = new Date(base.getTime());
+        quando.setHours(hora.h, hora.min, 0, 0);
+
+        if (quando < agora) {
+            // já passou hoje: tenta o próximo dia do período
+            var amanha = dataMaisDias(hoje, 1);
+            if (dFim < amanha) return null;
+            quando = new Date(amanha.getTime());
+            quando.setHours(hora.h, hora.min, 0, 0);
+        }
+
+        return { quando: quando, temHora: true };
+    }
+
+    function dd_mm(d) {
+        return (d.getDate() < 10 ? "0" : "") + d.getDate() + "/" +
+            (d.getMonth() + 1 < 10 ? "0" : "") + (d.getMonth() + 1);
+    }
 
     function atualizarBarra() {
         var agora = new Date();
+        var hoje = hojeZero();
         var proximo = null;
+        var proximaOc = null;
         var menor = Infinity;
 
         for (var i = 0; i < cache.length; i++) {
@@ -238,22 +300,37 @@
                 for (var k = 0; k < it._clones.length; k++) removeClass(it._clones[k], "evento-urgente");
             }
 
-            var ini = converterDataHora(it.inicio, it.horario);
-            if (!ini) continue;
+            var oc = proximaOcorrencia(it, agora, hoje);
+            if (!oc) continue;
 
-            var dif = ini - agora;
-            if (dif >= 0 && dif < menor) {
-                menor = dif;
+            var ms = oc.quando.getTime();
+            if (ms < menor) {          // em empate, vale o primeiro da tabela
+                menor = ms;
                 proximo = it;
+                proximaOc = oc;
             }
         }
 
-        var novoTexto = proximo ? (proximo.acao + " • " + proximo.horario) : "Nenhum evento programado.";
+        var novoTexto = "Nenhum evento programado.";
+
+        if (proximo) {
+            var partes = [proximo.acao];
+            var ehHoje = proximaOc.quando.getTime() < dataMaisDias(hoje, 1).getTime();
+
+            if (proximaOc.temHora) {
+                if (!ehHoje) partes.push(dd_mm(proximaOc.quando));
+                partes.push(proximo.horario);
+            } else {
+                partes.push(ehHoje ? "hoje" : dd_mm(proximaOc.quando));
+            }
+            novoTexto = partes.join(" • ");
+        }
+
         if (textoBarra.textContent !== novoTexto) textoBarra.textContent = novoTexto;
 
         if (!proximo) return;
 
-        if (menor <= 300000 && proximo._tr) {
+        if (proximaOc.temHora && (menor - agora.getTime()) <= 300000 && proximo._tr) {
             addClass(proximo._tr, "evento-urgente");
             if (proximo._clones) {
                 for (var m = 0; m < proximo._clones.length; m++) addClass(proximo._clones[m], "evento-urgente");
