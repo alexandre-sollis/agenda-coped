@@ -793,6 +793,15 @@ onSnapshot(agendaRef,async function(snapshot){
 
 });
 
+// Para eventos de hoje: sem horário vem primeiro; depois por horário.
+function chaveHoraDia(item){
+
+    const h = lerHora(item.horario);
+
+    return h ? (h.h * 60 + h.min) : -1;
+
+}
+
 function chaveHora(item){
 
     const t = lerHora(item.horario);
@@ -828,6 +837,22 @@ function desenharTabela(lista){
 
         if(hojeA && !hojeB) return -1;
         if(!hojeA && hojeB) return 1;
+
+        if(hojeA && hojeB){
+
+            // eventos de hoje: por horário (os de dia inteiro primeiro)
+            const kA = chaveHoraDia(a);
+            const kB = chaveHoraDia(b);
+
+            if(kA !== kB) return kA - kB;
+
+            const dI = inicioA.getTime() - inicioB.getTime();
+
+            if(dI !== 0) return dI;
+
+            return a._i - b._i;
+
+        }
 
         const futuroA = inicioA && inicioA >= hoje;
         const futuroB = inicioB && inicioB >= hoje;
@@ -936,9 +961,71 @@ function atualizarIndicadores(){
 
 }
 
+/* "Próximo evento" = primeiro da tabela que ainda não terminou:
+   - com horário: próxima ocorrência (hoje, se ainda não passou; senão o
+     próximo dia do período);
+   - sem horário (dia inteiro / só período): vale desde o início do dia e
+     durante todo o período do evento. */
+
+function dataMaisDias(d, dias){
+
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + dias);
+
+}
+
+function proximaOcorrencia(inicioTxt, fimTxt, horaTxt, agora, hoje){
+
+    const dIni = converterData(inicioTxt);
+
+    if(!dIni) return null;
+
+    const dFim = converterData(fimTxt) || dIni;
+
+    const hora = lerHora(horaTxt);
+
+    if(!hora){
+
+        if(dFim < hoje) return null;
+
+        return { quando: (dIni > hoje ? dIni : hoje), temHora: false };
+
+    }
+
+    const base = dIni > hoje ? dIni : (dFim >= hoje ? hoje : null);
+
+    if(!base) return null;
+
+    let quando = new Date(base.getTime());
+
+    quando.setHours(hora.h, hora.min, 0, 0);
+
+    if(quando < agora){
+
+        const amanha = dataMaisDias(hoje, 1);
+
+        if(dFim < amanha) return null;
+
+        quando = new Date(amanha.getTime());
+
+        quando.setHours(hora.h, hora.min, 0, 0);
+
+    }
+
+    return { quando: quando, temHora: true };
+
+}
+
+function ddmm(d){
+
+    return pad(d.getDate()) + "/" + pad(d.getMonth() + 1);
+
+}
+
 function monitorarEventos(){
 
     const agora = new Date();
+
+    const hoje = hojeZero();
 
     let proximo = null;
 
@@ -950,18 +1037,21 @@ function monitorarEventos(){
 
         const td = tr.querySelectorAll("td");
 
-        const inicio = converterDataHora(
-            td[0].textContent.trim(),
-            td[2].textContent.trim()
+        const oc = proximaOcorrencia(
+            td[0].textContent,
+            td[1].textContent,
+            td[2].textContent,
+            agora,
+            hoje
         );
 
-        if(!inicio) return;
+        if(!oc) return;
 
-        const diferenca = inicio - agora;
+        const ms = oc.quando.getTime();
 
-        if(diferenca >= 0 && diferenca < menorTempo){
+        if(ms < menorTempo){   // em empate, vale o primeiro da tabela
 
-            menorTempo = diferenca;
+            menorTempo = ms;
 
             const aviso = parseInt(td[3].textContent.trim() || "15",10);
 
@@ -975,7 +1065,9 @@ function monitorarEventos(){
 
                 aviso:isNaN(aviso) ? 15 : aviso,
 
-                inicio:inicio
+                inicio:oc.quando,
+
+                temHora:oc.temHora
 
             };
 
@@ -995,23 +1087,41 @@ function monitorarEventos(){
 
     }
 
-    if(proximoEvento) proximoEvento.textContent = formatarTempo(menorTempo);
+    const falta = proximo.inicio.getTime() - agora.getTime();
 
-    textoBarra.textContent =
-        `${proximo.titulo} • ${proximo.horario}`;
+    const ehHoje = proximo.inicio.getTime() < dataMaisDias(hoje, 1).getTime();
 
-    if(contadorBarra) contadorBarra.textContent = formatarTempo(menorTempo);
+    const partes = [proximo.titulo];
 
-    if(menorTempo <= 300000){
+    if(proximo.temHora){
+
+        if(!ehHoje) partes.push(ddmm(proximo.inicio));
+
+        partes.push(proximo.horario);
+
+    }else{
+
+        partes.push(ehHoje ? "hoje" : ddmm(proximo.inicio));
+
+    }
+
+    const novoTexto = partes.join(" • ");
+
+    if(textoBarra.textContent !== novoTexto) textoBarra.textContent = novoTexto;
+
+    if(proximoEvento) proximoEvento.textContent = formatarTempo(falta);
+
+    if(contadorBarra) contadorBarra.textContent = formatarTempo(falta);
+
+    if(proximo.temHora && falta <= 300000){
 
         proximo.linha.classList.add("evento-urgente");
 
     }
 
-    dispararAviso(proximo);
+    if(proximo.temHora) dispararAviso(proximo);
 
 }
-
 function dispararAviso(evento){
 
     const agora = new Date();
