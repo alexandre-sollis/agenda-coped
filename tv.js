@@ -235,6 +235,7 @@
         if (typeof montarCarrossel === "function") montarCarrossel();
         if (typeof montarInfinita === "function") montarInfinita();
 
+        barraUnidade = "";   // força remontar o letreiro com as medidas novas
         atualizarBarra();
     }
 
@@ -326,7 +327,7 @@
             novoTexto = partes.join(" • ");
         }
 
-        if (textoBarra.textContent !== novoTexto) textoBarra.textContent = novoTexto;
+        definirTextoBarra(novoTexto);
 
         if (!proximo) return;
 
@@ -336,6 +337,84 @@
                 for (var m = 0; m < proximo._clones.length; m++) addClass(proximo._clones[m], "evento-urgente");
             }
         }
+    }
+
+    /* ---------- letreiro da barra do próximo evento (em loop) ----------
+       O texto passa da direita para a esquerda sem parar. Para a emenda ser
+       perfeita, o texto é repetido (separado por " • ") e a faixa volta ao
+       ponto inicial a cada "unidade" completa. Feito em JavaScript com
+       transform, sem depender de animação CSS (TVs antigas podem não rodá-la). */
+
+    var VELOCIDADE_BARRA_PX_S = 100;     // velocidade do letreiro (pixels por segundo)
+    var LARGURA_MIN_BARRA = 360;         // largura mínima da barra (px)
+    var SEPARADOR_BARRA = "\u00a0\u00a0\u2022\u00a0\u00a0";
+
+    var barraUnidade = "";
+    var barraPos = 0;
+    var barraP = 0;
+    var barraUlt = 0;
+    var contBarra = document.getElementById("barraEvento");
+
+    function montarBarra() {
+        if (!contBarra) return;
+
+        // 1) mede uma unidade (texto + separador) e a largura só do texto
+        textoBarra.textContent = barraUnidade;
+        var u = textoBarra.offsetWidth;
+        textoBarra.textContent = barraUnidade + SEPARADOR_BARRA;
+        barraP = textoBarra.offsetWidth;
+
+        // 2) a barra tem a largura do texto (mínimo LARGURA_MIN_BARRA) e só
+        //    encolhe se faltar espaço no cabeçalho
+        contBarra.style.width = Math.max(u + 40, LARGURA_MIN_BARRA) + "px";
+        var b = contBarra.clientWidth;
+
+        // 3) repete a unidade até cobrir a barra + 1 unidade (sem buracos)
+        var n = Math.max(Math.ceil(b / Math.max(barraP, 1)) + 1, 2);
+        var s = "";
+        for (var i = 0; i < n; i++) s += barraUnidade + SEPARADOR_BARRA;
+        textoBarra.textContent = s;
+
+        barraPos = -b;      // começa entrando pela direita
+        barraUlt = 0;
+    }
+
+    function definirTextoBarra(texto) {
+        if (texto === barraUnidade) return;
+        barraUnidade = texto;
+        montarBarra();
+    }
+
+    function quadroBarra() {
+        if (barraP > 0) {
+            var agora = new Date().getTime();
+            var dt = barraUlt ? Math.min(agora - barraUlt, 250) : 0;
+            barraUlt = agora;
+
+            barraPos += VELOCIDADE_BARRA_PX_S * dt / 1000;
+            if (barraPos >= barraP) barraPos -= barraP;
+
+            var v = "translate3d(" + (-barraPos) + "px,0,0)";
+            textoBarra.style.webkitTransform = v;
+            textoBarra.style.transform = v;
+        }
+        raf(quadroBarra);
+    }
+
+    function iniciarBarra() {
+        if (!contBarra) return;
+
+        textoBarra.style.animation = "none";
+        textoBarra.style.webkitAnimation = "none";
+        textoBarra.style.whiteSpace = "nowrap";
+        textoBarra.style.webkitFlex = "0 0 auto";
+        textoBarra.style.flex = "0 0 auto";
+        textoBarra.style.webkitBackfaceVisibility = "hidden";
+
+        contBarra.style.webkitJustifyContent = "flex-start";
+        contBarra.style.justifyContent = "flex-start";
+
+        raf(quadroBarra);
     }
 
     /* ---------- busca da agenda ---------- */
@@ -853,6 +932,7 @@
     /* ---------- início ---------- */
 
     iniciarTicker();
+    iniciarBarra();
     carregar();
     carregarNoticias();
 
