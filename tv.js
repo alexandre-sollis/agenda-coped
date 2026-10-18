@@ -342,11 +342,11 @@
     /* ---------- letreiro da barra do próximo evento (em loop) ----------
        O texto passa da direita para a esquerda sem parar. Para a emenda ser
        perfeita, o texto é repetido (separado por " • ") e a faixa volta ao
-       ponto inicial a cada "unidade" completa. Feito em JavaScript com
+       ponto inicial a cada "unidade" completa. A barra tem comprimento fixo
+       e vai até o logo. Feito em JavaScript com
        transform, sem depender de animação CSS (TVs antigas podem não rodá-la). */
 
     var VELOCIDADE_BARRA_PX_S = 100;     // velocidade do letreiro (pixels por segundo)
-    var LARGURA_MIN_BARRA = 360;         // largura mínima da barra (px)
     var SEPARADOR_BARRA = "\u00a0\u00a0\u2022\u00a0\u00a0";
 
     var barraUnidade = "";
@@ -358,15 +358,12 @@
     function montarBarra() {
         if (!contBarra) return;
 
-        // 1) mede uma unidade (texto + separador) e a largura só do texto
-        textoBarra.textContent = barraUnidade;
-        var u = textoBarra.offsetWidth;
+        // 1) mede uma unidade (texto + separador)
         textoBarra.textContent = barraUnidade + SEPARADOR_BARRA;
         barraP = textoBarra.offsetWidth;
 
-        // 2) a barra tem a largura do texto (mínimo LARGURA_MIN_BARRA) e só
-        //    encolhe se faltar espaço no cabeçalho
-        contBarra.style.width = Math.max(u + 40, LARGURA_MIN_BARRA) + "px";
+        // 2) a barra tem comprimento definido pelo layout: ocupa todo o espaço
+        //    entre o canto esquerdo e o logo (ver "body.tv #barraEvento" no CSS)
         var b = contBarra.clientWidth;
 
         // 3) repete a unidade até cobrir a barra + 1 unidade (sem buracos)
