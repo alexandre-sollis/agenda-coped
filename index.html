@@ -16,8 +16,8 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="style.css?v=18">
-<link rel="stylesheet" href="tv-compat.css?v=18">
+<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="tv-compat.css?v=19">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -211,10 +211,10 @@ window.onerror = function(msg, src, line){
   var tv = window.location.search.indexOf("tv") !== -1;
   var s = document.createElement("script");
   if(tv){
-    s.src = "tv.js?v=18";
+    s.src = "tv.js?v=19";
   }else{
     s.type = "module";
-    s.src = "app.js?v=18";
+    s.src = "app.js?v=19";
   }
   s.onerror = function(){
     mostrarFalha("Falha ao carregar " + (tv ? "tv.js" : "app.js ou firebase.js"));
