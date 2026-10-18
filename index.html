@@ -16,9 +16,8 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="style.css?v=20">
-<link rel="stylesheet" href="tv-compat.css?v=20">
-<script type="module" src="app.js?v=2"></script>
+<link rel="stylesheet" href="style.css?v=21">
+<link rel="stylesheet" href="tv-compat.css?v=21">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -205,17 +204,20 @@ window.onerror = function(msg, src, line){
   mostrarFalha('Erro: ' + msg + ' (' + String(src).split('/').pop() + ':' + line + ')');
 };
 </script>
+
 <!-- Modo TV (?tv=1): script simples, sem módulos e sem SDK do Firebase.
-     Uso normal (edição): app.js como módulo. -->
+     Uso normal (edição): app.js como módulo, carregado UMA única vez aqui.
+     Ao alterar app.js, aumente o número de VERSAO abaixo (21, 22, 23...). -->
 <script>
 (function(){
+  var VERSAO = "21";
   var tv = window.location.search.indexOf("tv") !== -1;
   var s = document.createElement("script");
   if(tv){
     s.src = "tv.js?v=20";
   }else{
     s.type = "module";
-    s.src = "app.js?v=20";
+    s.src = "app.js?v=" + VERSAO;
   }
   s.onerror = function(){
     mostrarFalha("Falha ao carregar " + (tv ? "tv.js" : "app.js ou firebase.js"));
