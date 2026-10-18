@@ -5,21 +5,6 @@ import {
 } from "./firebase.js";
 
 /* =====================================================
-   COMPATIBILIDADE: este arquivo evita sintaxe moderna
-   (?. , ?? , etc.) para rodar em navegadores de TV antigos.
-===================================================== */
-
-/* =====================================================
-   CONFIGURAÇÃO / MODO TV  (abra a TV com ?tv=1 no final do link)
-===================================================== */
-
-const modoTV = window.location.search.indexOf("tv") !== -1;
-
-if (modoTV) {
-    document.body.classList.add("tv");
-}
-
-/* =====================================================
    SCROLL INTELIGENTE (CABEÇALHO + CARDS CONGELADOS)
 ===================================================== */
 
@@ -39,6 +24,16 @@ function ajustarScrollFixo(){
 window.addEventListener("resize",ajustarScrollFixo);
 window.addEventListener("load",ajustarScrollFixo);
 ajustarScrollFixo();
+
+/* =====================================================
+   CONFIGURAÇÃO
+===================================================== */
+
+const modoTV = window.location.search.includes("tv");
+
+if (modoTV) {
+    document.body.classList.add("tv");
+}
 
 /* =====================================================
    ELEMENTOS
@@ -66,17 +61,6 @@ const btnBaixarExcel = document.getElementById("btnBaixarExcel");
 const btnImportarExcel = document.getElementById("btnImportarExcel");
 const inputImportarExcel = document.getElementById("inputImportarExcel");
 
-/* No modo TV, esconde todos os botões de edição */
-if(modoTV){
-
-    [btnAdicionarLinha, btnRemoverLinha, btnBaixarExcel, btnImportarExcel].forEach(function(b){
-
-        if(b) b.style.display = "none";
-
-    });
-
-}
-
 /* =====================================================
    VARIÁVEIS
 ===================================================== */
@@ -96,53 +80,26 @@ function definirStatusSalvar(texto, tipo){
     statusSalvar.className = "status-salvar" + (tipo ? " status-" + tipo : "");
 }
 
-/* Mensagem de erro visível na tela (substitui alert(), que trava a TV) */
-function mostrarErroTela(texto){
-
-    let el = document.getElementById("erroTela");
-
-    if(!el){
-
-        el = document.createElement("div");
-        el.id = "erroTela";
-        document.body.appendChild(el);
-
-    }
-
-    el.textContent = texto || "";
-    el.style.display = texto ? "block" : "none";
-
-}
-
 /* =====================================================
    UTILITÁRIOS
 ===================================================== */
-
-function pad(n){
-
-    return (n < 10 ? "0" : "") + n;
-
-}
 
 function converterData(data){
 
     if(!data) return null;
 
-    const partes = String(data).trim().split("/");
+    const partes = data.split("/");
 
-    let d, m, a;
+    let d,m,a;
 
-    if(partes.length === 2){
+    if(partes.length===2){
 
-        d = partes[0];
-        m = partes[1];
+        [d,m] = partes;
         a = new Date().getFullYear();
 
-    }else if(partes.length === 3){
+    }else if(partes.length===3){
 
-        d = partes[0];
-        m = partes[1];
-        a = partes[2];
+        [d,m,a] = partes;
 
     }else{
 
@@ -150,42 +107,36 @@ function converterData(data){
 
     }
 
-    d = parseInt(d,10);
-    m = parseInt(m,10);
-    a = parseInt(a,10);
-
-    if(isNaN(d) || isNaN(m) || isNaN(a)) return null;
-
-    if(a < 100) a += 2000;
-
-    return new Date(a, m-1, d);
-
-}
-
-/* Lê horários como "07:30", "14h30", "8h", "8:30h às 11h" (usa o primeiro) */
-function lerHora(texto){
-
-    const m = String(texto || "").match(/(\d{1,2})\s*(?:[:hH]\s*(\d{2}))?/);
-
-    if(!m) return null;
-
-    return {
-        h: parseInt(m[1],10),
-        min: m[2] ? parseInt(m[2],10) : 0
-    };
+    return new Date(a,m-1,d);
 
 }
 
 function converterDataHora(data,hora){
 
-    const d = converterData(data);
-    const t = lerHora(hora);
+    if(!data || !hora) return null;
 
-    if(!d || !t) return null;
+    const partes = data.split("/");
 
-    d.setHours(t.h, t.min, 0, 0);
+    let d,m,a;
 
-    return d;
+    if(partes.length===2){
+
+        [d,m] = partes;
+        a = new Date().getFullYear();
+
+    }else if(partes.length===3){
+
+        [d,m,a] = partes;
+
+    }else{
+
+        return null;
+
+    }
+
+    const [h,min] = hora.split(":");
+
+    return new Date(a,m-1,d,h,min||0,0);
 
 }
 
@@ -229,72 +180,19 @@ function formatarTempo(ms){
 
 }
 
-/* Mostra dd/mm quando o ano é o atual; senão mostra a data completa */
 function formatarDataCurta(data){
 
     if(!data) return "";
 
-    const partes = String(data).trim().split("/");
+    const partes = data.trim().split("/");
 
-    if(partes.length === 3){
+    if(partes.length>=2){
 
-        if(parseInt(partes[2],10) === new Date().getFullYear()){
-
-            return `${partes[0]}/${partes[1]}`;
-
-        }
-
-        return String(data).trim();
+        return `${partes[0]}/${partes[1]}`;
 
     }
 
-    return String(data).trim();
-
-}
-
-/* Ao salvar, garante o ano na data (evita perder o ano de eventos futuros) */
-function completarAno(data){
-
-    const texto = String(data || "").trim();
-
-    const partes = texto.split("/");
-
-    if(partes.length === 2 && partes[0] && partes[1]){
-
-        return `${partes[0]}/${partes[1]}/${new Date().getFullYear()}`;
-
-    }
-
-    return texto;
-
-}
-
-/* Conversões para células vindas do Excel (datas e horas podem vir como número) */
-function textoData(v){
-
-    if(typeof v === "number" && window.XLSX && XLSX.SSF){
-
-        const p = XLSX.SSF.parse_date_code(v);
-
-        if(p) return `${pad(p.d)}/${pad(p.m)}/${p.y}`;
-
-    }
-
-    return String(v == null ? "" : v).trim();
-
-}
-
-function textoHora(v){
-
-    if(typeof v === "number" && v > 0 && v < 1){
-
-        const total = Math.round(v * 24 * 60);
-
-        return `${pad(Math.floor(total/60))}:${pad(total%60)}`;
-
-    }
-
-    return String(v == null ? "" : v).trim();
+    return data;
 
 }
 
@@ -328,7 +226,7 @@ function criarLinha(item = {
     td[5].textContent = item.acao || "";
     td[6].textContent = item.responsavel || "";
 
-    td.forEach(function(campo){
+    td.forEach(campo=>{
 
         campo.contentEditable = !modoTV;
 
@@ -336,7 +234,7 @@ function criarLinha(item = {
 
             campo.addEventListener("input",agendarSalvar);
 
-            campo.addEventListener("blur",function(){
+            campo.addEventListener("blur",()=>{
 
                 atualizarIndicadores();
 
@@ -344,7 +242,7 @@ function criarLinha(item = {
 
             });
 
-            campo.addEventListener("keydown",function(e){
+            campo.addEventListener("keydown",e=>{
 
                 if(e.key==="Enter"){
 
@@ -359,6 +257,41 @@ function criarLinha(item = {
         }
 
     });
+
+    // Botão de excluir a linha inteira (fora do modo TV).
+    // A célula é criada depois do forEach acima, então não é editável
+    // e não entra em lerTabela() (que só lê as colunas 0 a 6).
+    if(!modoTV){
+
+        const tdExcluir = document.createElement("td");
+        tdExcluir.className = "col-excluir";
+        tdExcluir.contentEditable = false;
+
+        const btn = document.createElement("span");
+        btn.className = "btn-excluir-linha";
+        btn.textContent = "✕";
+        btn.title = "Excluir este evento";
+        btn.setAttribute("role","button");
+        btn.tabIndex = 0;
+
+        btn.addEventListener("click",()=>excluirLinha(tr));
+
+        btn.addEventListener("keydown",e=>{
+
+            if(e.key==="Enter" || e.key===" "){
+
+                e.preventDefault();
+
+                excluirLinha(tr);
+
+            }
+
+        });
+
+        tdExcluir.appendChild(btn);
+        tr.appendChild(tdExcluir);
+
+    }
 
     tbody.appendChild(tr);
 
@@ -381,9 +314,11 @@ function adicionarLinha() {
     agendarSalvar();
 
     // Aguarda a linha ser renderizada
-    setTimeout(function(){
+    setTimeout(() => {
 
         try {
+
+            console.log("Direcionando para a nova linha:", linha);
 
             linha.scrollIntoView({
                 behavior: "smooth",
@@ -402,7 +337,7 @@ function adicionarLinha() {
             linha.style.outline = "3px solid #FFC107";
             linha.style.background = "#FFF59D";
 
-            setTimeout(function(){
+            setTimeout(() => {
                 linha.style.outline = "";
                 linha.style.background = "";
             }, 1500);
@@ -433,6 +368,41 @@ function removerLinha(){
 
 }
 
+function excluirLinha(tr){
+
+    const titulo = tr.querySelectorAll("td")[5].textContent.trim() || "sem título";
+
+    if(!confirm(`Excluir o evento "${titulo}"?`)) return;
+
+    tr.remove();
+
+    atualizarIndicadores();
+
+    monitorarEventos();
+
+    agendarSalvar();
+
+}
+
+// Cabeçalho da coluna do botão de excluir (fora do modo TV)
+function adicionarColunaExcluir(){
+
+    if(modoTV) return;
+
+    const trHead = document.querySelector("#agenda thead tr");
+
+    if(trHead && !trHead.querySelector(".col-excluir")){
+
+        const th = document.createElement("th");
+        th.className = "col-excluir";
+        trHead.appendChild(th);
+
+    }
+
+}
+
+adicionarColunaExcluir();
+
 if(!modoTV && btnAdicionarLinha && btnRemoverLinha){
 
     btnAdicionarLinha.addEventListener("click",adicionarLinha);
@@ -441,21 +411,21 @@ if(!modoTV && btnAdicionarLinha && btnRemoverLinha){
 
 }
 
-if(!modoTV && btnBaixarExcel){
+if(btnBaixarExcel){
 
     btnBaixarExcel.addEventListener("click",baixarExcel);
 
 }
 
-if(!modoTV && btnImportarExcel && inputImportarExcel){
+if(btnImportarExcel && inputImportarExcel){
 
-    btnImportarExcel.addEventListener("click",function(){
+    btnImportarExcel.addEventListener("click",()=>{
 
         inputImportarExcel.click();
 
     });
 
-    inputImportarExcel.addEventListener("change",function(e){
+    inputImportarExcel.addEventListener("change",(e)=>{
 
         const arquivo = e.target.files[0];
 
@@ -481,21 +451,17 @@ function baixarExcel(){
 
         const dados = lerTabela();
 
-        const linhasFormatadas = dados.map(function(item){
+        const linhasFormatadas = dados.map(item=>({
 
-            return {
+            "Início": item.inicio,
+            "Fim": item.fim,
+            "Horário": item.horario,
+            "Aviso (min)": item.aviso,
+            "Período": item.periodo,
+            "Ação": item.acao,
+            "Responsável": item.responsavel
 
-                "Início": item.inicio,
-                "Fim": item.fim,
-                "Horário": item.horario,
-                "Aviso (min)": item.aviso,
-                "Período": item.periodo,
-                "Ação": item.acao,
-                "Responsável": item.responsavel
-
-            };
-
-        });
+        }));
 
         const planilha = XLSX.utils.json_to_sheet(linhasFormatadas);
 
@@ -521,7 +487,7 @@ function importarExcel(arquivo){
 
     const leitor = new FileReader();
 
-    leitor.onload = function(evento){
+    leitor.onload = (evento)=>{
 
         try{
 
@@ -543,17 +509,17 @@ function importarExcel(arquivo){
 
             tbody.innerHTML = "";
 
-            linhas.forEach(function(linha){
+            linhas.forEach(linha=>{
 
                 criarLinha({
 
-                    inicio: textoData(linha["Início"] || linha["Inicio"] || ""),
-                    fim: textoData(linha["Fim"] || ""),
-                    horario: textoHora(linha["Horário"] || linha["Horario"] || ""),
-                    aviso: String(linha["Aviso (min)"] || linha["Aviso"] || "15").trim(),
-                    periodo: String(linha["Período"] || linha["Periodo"] || "").trim(),
-                    acao: String(linha["Ação"] || linha["Acao"] || "").trim(),
-                    responsavel: String(linha["Responsável"] || linha["Responsavel"] || "").trim()
+                    inicio: String(linha["Início"] ?? linha["Inicio"] ?? "").trim(),
+                    fim: String(linha["Fim"] ?? "").trim(),
+                    horario: String(linha["Horário"] ?? linha["Horario"] ?? "").trim(),
+                    aviso: String(linha["Aviso (min)"] ?? linha["Aviso"] ?? "15").trim(),
+                    periodo: String(linha["Período"] ?? linha["Periodo"] ?? "").trim(),
+                    acao: String(linha["Ação"] ?? linha["Acao"] ?? "").trim(),
+                    responsavel: String(linha["Responsável"] ?? linha["Responsavel"] ?? "").trim()
 
                 });
 
@@ -587,15 +553,15 @@ function lerTabela(){
 
     const agenda=[];
 
-    tbody.querySelectorAll("tr").forEach(function(tr){
+    tbody.querySelectorAll("tr").forEach(tr=>{
 
         const td=tr.querySelectorAll("td");
 
         agenda.push({
 
-            inicio:completarAno(td[0].textContent),
+            inicio:td[0].textContent.trim(),
 
-            fim:completarAno(td[1].textContent),
+            fim:td[1].textContent.trim(),
 
             horario:td[2].textContent.trim(),
 
@@ -621,15 +587,11 @@ function lerTabela(){
 
 function agendarSalvar(){
 
-    if(modoTV) return; // a TV nunca grava
-
     definirStatusSalvar("Alterações pendentes…", "pendente");
 
     clearTimeout(timeoutSalvar);
 
-    timeoutSalvar = setTimeout(function(){
-
-        timeoutSalvar = null; // importante: senão o aviso de "sair da página" nunca some
+    timeoutSalvar = setTimeout(()=>{
 
         salvarFirebase();
 
@@ -639,10 +601,8 @@ function agendarSalvar(){
 
 async function salvarFirebase(){
 
-    if(modoTV) return;
-
     // Em vez de descartar esta chamada, marca para rodar de novo
-    // assim que o salvamento atual terminar.
+    // assim que o salvamento atual terminar. Antes, isso era perdido.
     if(salvando){
 
         salvarNovamente = true;
@@ -681,14 +641,15 @@ async function salvarFirebase(){
             "erro"
         );
 
-        // Tenta de novo automaticamente (com espera crescente)
+        // Tenta de novo automaticamente (com espera crescente),
+        // em vez de simplesmente desistir e perder a edição.
         salvando = false;
 
         const espera = Math.min(2000 * tentativasErro, 15000);
 
         setTimeout(salvarFirebase, espera);
 
-        if(tentativasErro === 4){ // avisa uma vez só
+        if(tentativasErro >= 4){
 
             alert(
                 "Não foi possível salvar as últimas alterações na agenda há vários minutos. " +
@@ -714,9 +675,9 @@ async function salvarFirebase(){
 }
 
 // Avisa antes de fechar/recarregar a aba se houver algo ainda não salvo
-window.addEventListener("beforeunload", function(e){
+window.addEventListener("beforeunload", (e) => {
 
-    if(!modoTV && (salvando || timeoutSalvar)){
+    if(salvando || timeoutSalvar){
 
         e.preventDefault();
         e.returnValue = "";
@@ -729,24 +690,13 @@ window.addEventListener("beforeunload", function(e){
    FIREBASE
 ===================================================== */
 
-onSnapshot(agendaRef,async function(snapshot){
+onSnapshot(agendaRef,async(snapshot)=>{
 
     if(!snapshot.exists()){
 
-        // Resposta vinda só do cache (sem confirmação do servidor): não é
-        // seguro concluir que o documento não existe, e gravar uma agenda
-        // vazia agora poderia apagar os dados reais.
-        if(snapshot.metadata && snapshot.metadata.fromCache) return;
-
-        // A TV nunca cria nem altera dados.
-        if(modoTV){
-
-            mostrarErroTela("Agenda não encontrada no banco de dados.");
-
-            return;
-
-        }
-
+        // Só cria o documento vazio se ele realmente nunca existiu.
+        // (Se isso disparar depois de já ter havido dados, é sinal de
+        // que o documento foi apagado no Firestore — não escondemos mais o aviso.)
         console.warn("Documento 'agenda/principal' não existe. Criando um novo vazio.");
 
         await setDoc(agendaRef,{
@@ -761,8 +711,6 @@ onSnapshot(agendaRef,async function(snapshot){
 
     }
 
-    mostrarErroTela("");
-
     const dados = snapshot.data();
 
     const agenda = dados.agenda || [];
@@ -775,49 +723,31 @@ onSnapshot(agendaRef,async function(snapshot){
 
     desenharTabela(agenda);
 
-},function(erro){
+},(erro)=>{
 
+    // Antes, um erro aqui (ex: permissão negada nas regras do Firestore,
+    // ou sem internet) passava totalmente despercebido.
     console.error("Erro ao sincronizar com o Firestore:", erro);
 
     definirStatusSalvar("⚠ Sem conexão com o banco de dados", "erro");
 
-    if(erro && erro.code === "permission-denied"){
+    if(erro.code === "permission-denied"){
 
-        mostrarErroTela("Sem permissão para ler a agenda (verifique as regras de segurança do Firestore).");
-
-    }else{
-
-        mostrarErroTela("Sem conexão com o banco de dados. Tentando reconectar…");
+        alert(
+            "Sem permissão para acessar a agenda no Firebase. " +
+            "As regras de segurança do Firestore podem ter mudado. " +
+            "Avise o responsável técnico."
+        );
 
     }
 
 });
 
-// Para eventos de hoje: sem horário vem primeiro; depois por horário.
-function chaveHoraDia(item){
-
-    const h = lerHora(item.horario);
-
-    return h ? (h.h * 60 + h.min) : -1;
-
-}
-
-function chaveHora(item){
-
-    const t = lerHora(item.horario);
-
-    return t ? (t.h * 60 + t.min) : 9999;
-
-}
-
 function desenharTabela(lista){
 
     const hoje = hojeZero();
 
-    // Guarda a posição original (o sort de navegadores antigos não é estável)
-    lista.forEach(function(item,i){ item._i = i; });
-
-    lista.sort(function(a,b){
+    lista.sort((a,b)=>{
 
         const inicioA = converterData(a.inicio);
         const fimA = converterData(a.fim);
@@ -838,43 +768,19 @@ function desenharTabela(lista){
         if(hojeA && !hojeB) return -1;
         if(!hojeA && hojeB) return 1;
 
-        if(hojeA && hojeB){
-
-            // eventos de hoje: por horário (os de dia inteiro primeiro)
-            const kA = chaveHoraDia(a);
-            const kB = chaveHoraDia(b);
-
-            if(kA !== kB) return kA - kB;
-
-            const dI = inicioA.getTime() - inicioB.getTime();
-
-            if(dI !== 0) return dI;
-
-            return a._i - b._i;
-
-        }
-
         const futuroA = inicioA && inicioA >= hoje;
         const futuroB = inicioB && inicioB >= hoje;
 
         if(futuroA && !futuroB) return -1;
         if(!futuroA && futuroB) return 1;
 
-        const dif = (inicioA ? inicioA.getTime() : 0) - (inicioB ? inicioB.getTime() : 0);
-
-        if(dif !== 0) return dif;
-
-        const difHora = chaveHora(a) - chaveHora(b);
-
-        if(difHora !== 0) return difHora;
-
-        return a._i - b._i;
+        return inicioA - inicioB;
 
     });
 
     tbody.innerHTML="";
 
-    lista.forEach(function(item){ criarLinha(item); });
+    lista.forEach(item=>criarLinha(item));
 
     destacarEventos();
     colorirLinhas();
@@ -888,7 +794,7 @@ function destacarEventos(){
 
     const hoje = hojeZero();
 
-    tbody.querySelectorAll("tr").forEach(function(tr){
+    tbody.querySelectorAll("tr").forEach(tr=>{
 
         tr.classList.remove("evento-hoje");
 
@@ -922,7 +828,7 @@ function atualizarIndicadores(){
 
     const responsaveis = new Set();
 
-    linhas.forEach(function(tr){
+    linhas.forEach(tr=>{
 
         const td = tr.querySelectorAll("td");
 
@@ -961,99 +867,32 @@ function atualizarIndicadores(){
 
 }
 
-/* "Próximo evento" = primeiro da tabela que ainda não terminou:
-   - com horário: próxima ocorrência (hoje, se ainda não passou; senão o
-     próximo dia do período);
-   - sem horário (dia inteiro / só período): vale desde o início do dia e
-     durante todo o período do evento. */
-
-function dataMaisDias(d, dias){
-
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + dias);
-
-}
-
-function proximaOcorrencia(inicioTxt, fimTxt, horaTxt, agora, hoje){
-
-    const dIni = converterData(inicioTxt);
-
-    if(!dIni) return null;
-
-    const dFim = converterData(fimTxt) || dIni;
-
-    const hora = lerHora(horaTxt);
-
-    if(!hora){
-
-        if(dFim < hoje) return null;
-
-        return { quando: (dIni > hoje ? dIni : hoje), temHora: false };
-
-    }
-
-    const base = dIni > hoje ? dIni : (dFim >= hoje ? hoje : null);
-
-    if(!base) return null;
-
-    let quando = new Date(base.getTime());
-
-    quando.setHours(hora.h, hora.min, 0, 0);
-
-    if(quando < agora){
-
-        const amanha = dataMaisDias(hoje, 1);
-
-        if(dFim < amanha) return null;
-
-        quando = new Date(amanha.getTime());
-
-        quando.setHours(hora.h, hora.min, 0, 0);
-
-    }
-
-    return { quando: quando, temHora: true };
-
-}
-
-function ddmm(d){
-
-    return pad(d.getDate()) + "/" + pad(d.getMonth() + 1);
-
-}
-
 function monitorarEventos(){
 
     const agora = new Date();
-
-    const hoje = hojeZero();
 
     let proximo = null;
 
     let menorTempo = Infinity;
 
-    tbody.querySelectorAll("tr").forEach(function(tr){
+    tbody.querySelectorAll("tr").forEach(tr=>{
 
         tr.classList.remove("evento-urgente");
 
         const td = tr.querySelectorAll("td");
 
-        const oc = proximaOcorrencia(
-            td[0].textContent,
-            td[1].textContent,
-            td[2].textContent,
-            agora,
-            hoje
+        const inicio = converterDataHora(
+            td[0].textContent.trim(),
+            td[2].textContent.trim()
         );
 
-        if(!oc) return;
+        if(!inicio) return;
 
-        const ms = oc.quando.getTime();
+        const diferenca = inicio - agora;
 
-        if(ms < menorTempo){   // em empate, vale o primeiro da tabela
+        if(diferenca >= 0 && diferenca < menorTempo){
 
-            menorTempo = ms;
-
-            const aviso = parseInt(td[3].textContent.trim() || "15",10);
+            menorTempo = diferenca;
 
             proximo = {
 
@@ -1063,11 +902,9 @@ function monitorarEventos(){
 
                 horario:td[2].textContent.trim(),
 
-                aviso:isNaN(aviso) ? 15 : aviso,
+                aviso:parseInt(td[3].textContent.trim() || "15"),
 
-                inicio:oc.quando,
-
-                temHora:oc.temHora
+                inicio:inicio
 
             };
 
@@ -1087,41 +924,23 @@ function monitorarEventos(){
 
     }
 
-    const falta = proximo.inicio.getTime() - agora.getTime();
+    if(proximoEvento) proximoEvento.textContent = formatarTempo(menorTempo);
 
-    const ehHoje = proximo.inicio.getTime() < dataMaisDias(hoje, 1).getTime();
+    textoBarra.textContent =
+        `${proximo.titulo} • ${proximo.horario}`;
 
-    const partes = [proximo.titulo];
+    if(contadorBarra) contadorBarra.textContent = formatarTempo(menorTempo);
 
-    if(proximo.temHora){
-
-        if(!ehHoje) partes.push(ddmm(proximo.inicio));
-
-        partes.push(proximo.horario);
-
-    }else{
-
-        partes.push(ehHoje ? "hoje" : ddmm(proximo.inicio));
-
-    }
-
-    const novoTexto = partes.join(" • ");
-
-    if(textoBarra.textContent !== novoTexto) textoBarra.textContent = novoTexto;
-
-    if(proximoEvento) proximoEvento.textContent = formatarTempo(falta);
-
-    if(contadorBarra) contadorBarra.textContent = formatarTempo(falta);
-
-    if(proximo.temHora && falta <= 300000){
+    if(menorTempo <= 300000){
 
         proximo.linha.classList.add("evento-urgente");
 
     }
 
-    if(proximo.temHora) dispararAviso(proximo);
+    dispararAviso(proximo);
 
 }
+
 function dispararAviso(evento){
 
     const agora = new Date();
@@ -1153,7 +972,7 @@ function dispararAviso(evento){
 
     tocarSom();
 
-    setTimeout(function(){
+    setTimeout(()=>{
 
         alertaEvento.style.display="none";
 
@@ -1167,19 +986,13 @@ function tocarSom(){
 
     audio.volume = 1;
 
-    const tentativa = audio.play();
+    audio.play().catch(()=>{
 
-    if(tentativa && tentativa.catch){
+        console.log("Som bloqueado pelo navegador.");
 
-        tentativa.catch(function(){
+    });
 
-            console.log("Som bloqueado pelo navegador.");
-
-        });
-
-    }
-
-    setTimeout(function(){
+    setTimeout(()=>{
 
         audio.pause();
 
@@ -1195,7 +1008,7 @@ function colorirLinhas(){
 
     const hoje = hojeZero();
 
-    tbody.querySelectorAll("tr").forEach(function(tr){
+    tbody.querySelectorAll("tr").forEach(tr=>{
 
         tr.classList.remove(
             "periodo-manha",
@@ -1211,16 +1024,16 @@ function colorirLinhas(){
             .trim()
             .toLowerCase();
 
-        if(periodo.indexOf("manh") !== -1 || periodo.indexOf("matutino") !== -1)
+        if(periodo.includes("manhã"))
             tr.classList.add("periodo-manha");
 
-        if(periodo.indexOf("tarde") !== -1 || periodo.indexOf("vespertino") !== -1)
+        if(periodo.includes("tarde"))
             tr.classList.add("periodo-tarde");
 
-        if(periodo.indexOf("noite") !== -1 || periodo.indexOf("noturno") !== -1)
+        if(periodo.includes("noite"))
             tr.classList.add("periodo-noite");
 
-        if(periodo.indexOf("integral") !== -1)
+        if(periodo.includes("integral"))
             tr.classList.add("periodo-integral");
 
         const fim = converterData(td[1].textContent);
@@ -1236,49 +1049,19 @@ function colorirLinhas(){
 }
 
 /* =====================================================
-   MODO TV: RECARREGAMENTO E ROLAGEM AUTOMÁTICA
+   RECARREGAMENTO AUTOMÁTICO (MODO TV)
 ===================================================== */
 
 if (modoTV) {
 
     // Recarrega a página a cada 15 minutos
-    setInterval(function(){
+    setInterval(() => {
+
+        console.log("Recarregando painel...");
 
         location.replace(location.href);
 
     }, 15 * 60 * 1000);
-
-    // "Paginação" automática: a cada 12 s rola a tabela uma tela para baixo
-    // e volta ao início quando chega ao fim (a TV não tem mouse).
-    setInterval(function(){
-
-        const cont = document.querySelector(".table-container");
-
-        if(!cont) return;
-
-        const max = cont.scrollHeight - cont.clientHeight;
-
-        if(max <= 4){
-
-            cont.scrollTop = 0;
-
-            return;
-
-        }
-
-        if(cont.scrollTop >= max - 4){
-
-            cont.scrollTop = 0;
-
-        }else{
-
-            const passo = Math.max(cont.clientHeight - 100, 120);
-
-            cont.scrollTop = Math.min(cont.scrollTop + passo, max);
-
-        }
-
-    }, 12000);
 
 }
 
@@ -1287,31 +1070,15 @@ if (modoTV) {
 =========================== */
 
 const RSS_G1 = 'https://g1.globo.com/rss/g1/educacao/';
-// troque por 'https://g1.globo.com/rss/g1/' se quiser notícias gerais
+// troque por 'https://g1.globo.com/rss/g1/' se quiser notícias gerais,
+// em vez de só educação
 
-// Manchetes que contenham estas palavras não aparecem na TV.
-// Edite a lista à vontade (deixe [] para não filtrar nada).
-const PALAVRAS_BLOQUEADAS = ['grito', 'ameaça', 'assassin', 'estupro', 'tiroteio', 'morto', 'morre'];
-
-function manchetePermitida(titulo){
-
-    const t = titulo.toLowerCase();
-
-    for(let i = 0; i < PALAVRAS_BLOQUEADAS.length; i++){
-
-        if(t.indexOf(PALAVRAS_BLOQUEADAS[i]) !== -1) return false;
-
-    }
-
-    return true;
-
-}
-
-// Extrai os títulos de um XML de RSS (string)
+// Extrai os títulos de um XML de RSS (string) já resolvido
 function extrairManchetesDeXml(textoXml) {
     const parser = new DOMParser();
     const xml = parser.parseFromString(textoXml, 'text/xml');
 
+    // Se o parser encontrar um erro de sintaxe, o XML retornado contém <parsererror>
     if (xml.querySelector('parsererror')) {
         throw new Error('XML inválido/parsererror ao interpretar o RSS.');
     }
@@ -1319,16 +1086,13 @@ function extrairManchetesDeXml(textoXml) {
     const itens = xml.querySelectorAll('item');
 
     return Array.from(itens)
-        .map(function(item){
-            const t = item.querySelector('title');
-            return t ? t.textContent.trim() : '';
-        })
-        .filter(Boolean)
-        .filter(manchetePermitida)
-        .slice(0, 8);
+        .slice(0, 8)
+        .map(item => item.querySelector('title')?.textContent.trim())
+        .filter(Boolean);
 }
 
-// Fonte 1: rss2json
+// Fonte 1: rss2json — feito especificamente para converter RSS em JSON,
+// mais estável que proxies genéricos de CORS.
 async function buscarViaRss2json() {
     const url = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(RSS_G1);
     const resposta = await fetch(url);
@@ -1344,13 +1108,12 @@ async function buscarViaRss2json() {
     }
 
     return dados.items
-        .map(function(item){ return (item.title || '').trim(); })
-        .filter(Boolean)
-        .filter(manchetePermitida)
-        .slice(0, 8);
+        .slice(0, 8)
+        .map(item => (item.title || '').trim())
+        .filter(Boolean);
 }
 
-// Fonte 2 (fallback): allorigins
+// Fonte 2 (fallback): allorigins — usado apenas se o rss2json falhar
 async function buscarViaAllorigins() {
     const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(RSS_G1);
     const resposta = await fetch(proxy);
@@ -1383,15 +1146,13 @@ async function carregarNoticiasG1() {
         { nome: 'corsproxy.io', buscar: buscarViaCorsproxy }
     ];
 
-    for (let i = 0; i < fontes.length; i++) {
-        const fonte = fontes[i];
-
+    for (const fonte of fontes) {
         try {
             const manchetes = await fonte.buscar();
 
             if (manchetes.length) {
                 document.getElementById('avisos').textContent =
-                    manchetes.map(function(m){ return `📰 ${m}`; }).join('     •     ');
+                    manchetes.map(m => `📰 ${m}`).join('     •     ');
 
                 console.log(`Notícias carregadas via ${fonte.nome} (${manchetes.length} itens).`);
                 return; // sucesso — não tenta as próximas fontes
@@ -1400,7 +1161,7 @@ async function carregarNoticiasG1() {
             console.log(`Fonte ${fonte.nome} respondeu, mas sem manchetes.`);
 
         } catch (erro) {
-            console.log(`Falha ao carregar notícias via ${fonte.nome}:`, (erro && erro.message) || erro);
+            console.log(`Falha ao carregar notícias via ${fonte.nome}:`, erro.message || erro);
             // tenta a próxima fonte da lista
         }
     }
