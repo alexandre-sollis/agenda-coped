@@ -3,10 +3,8 @@
    Ajustes para navegadores de TV antigos e para o modo TV (?tv=1)
 ========================================================== */
 
-/* 1) 'gap' em flexbox não existe em navegadores anteriores ao Chrome 84.
-      Aqui o espaçamento é refeito com margens (visual idêntico). */
+/* 1) Ajustes de espaçamento e alinhamento para computadores e telas grandes */
 @media (min-width: 1101px) {
-
     .dashboard { 
         gap: 0; 
         align-items: stretch; 
@@ -19,16 +17,13 @@
     .stat-card { gap: 0; }
     .stat-card > * + * { margin-left: 16px; }
 
-    .stat-left { gap: 0; }
-    .stat-left > * + * { margin-left: 10px; }
-
-    /* CORREÇÃO DEFINITIVA DOS BOTÕES NA BASE (COMPUTADOR) */
+    /* Alinhamento perfeito dos botões na parte inferior */
     .dashboard-actions { 
         gap: 0; 
         height: 100%; 
         display: flex;
         flex-direction: column;
-        justify-content: flex-end !important; /* Empurra os botões para a parte inferior */
+        justify-content: flex-end !important; 
     }
     .dashboard-actions > * + * { margin-top: 6px; }
 
@@ -36,7 +31,7 @@
     .btn-baixar-excel { gap: 0; }
 }
 
-/* 2) 'inset' não existe em navegadores anteriores ao Chrome 87 */
+/* 2) Compatibilidade para 'inset' */
 .background,
 .alerta {
     top: 0;
@@ -45,8 +40,7 @@
     left: 0;
 }
 
-/* 3) Modo TV (?tv=1): sem botões de edição, tabela rolando sozinha,
-      cabeçalho da tabela fixo durante a rolagem */
+/* 3) Modo TV (?tv=1) */
 body.tv .dashboard-actions { display: none !important; }
 
 body.tv .table-container {
@@ -61,7 +55,7 @@ body.tv .table-container thead th {
     background-color: #1565c0;
 }
 
-/* 4) Mensagem de erro visível na tela (substitui alert) */
+/* 4) Mensagem de erro na tela */
 #erroTela {
     display: none;
     position: fixed;
