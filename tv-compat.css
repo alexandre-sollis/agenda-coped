@@ -7,7 +7,10 @@
       Aqui o espaçamento é refeito com margens (visual idêntico). */
 @media (min-width: 1101px) {
 
-    .dashboard { gap: 0; align-items: stretch; }
+    .dashboard { 
+        gap: 0; 
+        align-items: stretch; 
+    }
     .dashboard > * + * { margin-left: 14px; }
 
     .logo-area { gap: 0; }
@@ -19,7 +22,14 @@
     .stat-left { gap: 0; }
     .stat-left > * + * { margin-left: 10px; }
 
-    .dashboard-actions { gap: 0; height: 100%; justify-content: flex-end; }
+    /* CORREÇÃO DEFINITIVA DOS BOTÕES NA BASE (COMPUTADOR) */
+    .dashboard-actions { 
+        gap: 0; 
+        height: 100%; 
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end !important; /* Empurra os botões para a parte inferior */
+    }
     .dashboard-actions > * + * { margin-top: 6px; }
 
     .btn-novo-evento,
