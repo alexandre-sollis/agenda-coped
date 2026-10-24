@@ -776,3 +776,16 @@ body.tv .stat-card.card-gradient:hover { transform: none; }
         align-self: flex-end !important;
     }
 }
+/* CORREÇÃO DEFINITIVA PARA O ALINHAMENTO INFERIOR DOS BOTÕES */
+@media (min-width: 1101px) {
+    .dashboard {
+        align-items: stretch !important;
+    }
+    
+    .dashboard-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-end !important; /* Empurra o grid para a parte inferior */
+        height: auto !important;
+    }
+}
