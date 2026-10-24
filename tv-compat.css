@@ -48,7 +48,7 @@ body.tv .table-container thead th {
     position: sticky;
     top: 0;
     z-index: 2;
-    background-color: #274562;
+    background-color: #1565c0;
 }
 
 /* 4) Mensagem de erro visível na tela (substitui alert) */
