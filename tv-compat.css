@@ -7,7 +7,7 @@
       Aqui o espaçamento é refeito com margens (visual idêntico). */
 @media (min-width: 1101px) {
 
-    .dashboard { gap: 0; }
+    .dashboard { gap: 0; align-items: stretch; }
     .dashboard > * + * { margin-left: 14px; }
 
     .logo-area { gap: 0; }
@@ -19,7 +19,7 @@
     .stat-left { gap: 0; }
     .stat-left > * + * { margin-left: 10px; }
 
-    .dashboard-actions { gap: 0; }
+    .dashboard-actions { gap: 0; height: 100%; justify-content: flex-end; }
     .dashboard-actions > * + * { margin-top: 6px; }
 
     .btn-novo-evento,
