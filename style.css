@@ -539,6 +539,10 @@ footer {
    ESTADOS DE EVENTOS
 =========================== */
 
+/* ===========================
+   ESTADOS DE EVENTOS
+=========================== */
+
 .evento-urgente {
     background: #ffebee !important;
     animation: pulsar 1s infinite;
@@ -573,7 +577,6 @@ footer {
     50% { transform: scale(1.01); }
     100% { transform: scale(1); }
 }
-
 /* ===========================
    ALERTA MODAL
 =========================== */
