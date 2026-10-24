@@ -244,9 +244,8 @@ header {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     gap: 6px;
-    height: 100%;
+    margin-top: auto; /* Empurra automaticamente todo o bloco de botões para a base inferior */
 }
 
 .dashboard-actions-grid {
