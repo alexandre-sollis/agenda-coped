@@ -760,3 +760,19 @@ body.tv .stat-card.card-gradient:hover { transform: none; }
 #avisos { -webkit-animation: ticker 60s linear infinite; }
 #textoBarra { -webkit-animation: deslizar 18s linear infinite; }
 .evento-urgente { -webkit-animation: pulsar
+
+/* Correção forçada para alinhar os botões na base no computador */
+@media (min-width: 1101px) {
+    .dashboard {
+        align-items: stretch !important;
+    }
+    .dashboard-actions {
+        height: 100% !important;
+        justify-content: flex-end !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    .dashboard-actions-grid {
+        align-self: flex-end !important;
+    }
+}
