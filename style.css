@@ -40,7 +40,8 @@ header {
     position: sticky;
     top: 0;
     z-index: 100;
-    height: 90px;
+    height: auto;
+    min-height: 90px;
     background: linear-gradient(
         135deg,
         #5E35B1,
@@ -55,7 +56,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 48px;
+    padding: 8px 48px;
     box-shadow: 0 12px 35px rgba(30, 64, 175, .18);
 }
 
@@ -63,6 +64,7 @@ header {
     display: flex;
     align-items: center;
     gap: 18px;
+    flex: 0 0 auto;
 }
 
 .logo {
@@ -70,6 +72,10 @@ header {
     align-items: center;
     justify-content: center;
     height: 64px;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .logo img {
@@ -82,11 +88,15 @@ header {
 .logo-area h1 {
     font-size: 34px;
     font-weight: 700;
+    white-space: nowrap;
+    line-height: 1.15;
 }
 
 .logo-area p {
     opacity: .85;
     margin-top: 4px;
+    white-space: nowrap;
+    line-height: 1.2;
 }
 
 .clock-area {
@@ -205,7 +215,7 @@ header {
 .stat-card-link {
     text-decoration: none;
     color: inherit;
-    display: block;
+    display: flex;
     flex: 1;
 }
 
@@ -220,21 +230,23 @@ header {
     border-radius: 18px;
     padding: 20px;
     cursor: pointer;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .stat-card.card-gradient:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 25px rgba(21, 101, 192, 0.35);
     background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
-    
 }
 
 .dashboard-actions {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     gap: 6px;
-    justify-content: flex-end; /* Alinha os botões na parte inferior */
+    height: 100%;
 }
 
 .dashboard-actions-grid {
@@ -501,6 +513,9 @@ footer {
 =========================== */
 
 #barraEvento {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-right: 32px;
     height: 50px;
     color: white;
     display: flex;
@@ -621,36 +636,18 @@ body.tv .card span { font-size: 54px; }
 
 @media (max-width: 1100px) {
     .dashboard {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    header {
-        flex-direction: column;
-        height: auto;
-        padding: 20px;
-        gap: 10px;
-    }
-
-    .clock-area {
-        text-align: center;
-    }
-}
-
-/* ==========================================================
-   REGRAS RESPONSIVAS (celular/tablet) — só estrutura, sem cores
-========================================================== */
-@media (max-width: 1100px) {
-    .dashboard {
         display: flex;
         flex-wrap: wrap;
         top: 0;
         padding: 18px;
     }
     .stat-card, .stat-card-link { min-width: min(100%, 260px); }
-    .dashboard-actions { flex: 1 1 100%; }
+    .dashboard-actions { flex: 1 1 100%; height: auto; }
     .dashboard-actions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    header { flex-direction: row; height: auto; min-height: 90px; padding: 16px 22px; }
-    .logo-area h1 { font-size: clamp(18px, 3vw, 30px); }
+    header { flex-direction: column; align-items: stretch; height: auto; min-height: 90px; padding: 10px 16px; gap: 8px; }
+    .logo-area { order: -1; justify-content: center; }
+    #barraEvento { margin-right: 0; width: 100%; flex: 0 0 auto; font-size: 24px; }
+    .logo-area h1 { font-size: clamp(18px, 3.4vw, 30px); }
     #clock { font-size: clamp(28px, 5vw, 44px); }
     .table-container { margin: 0 16px 20px; max-height: calc(100vh - 300px); overflow: auto; }
     th { font-size: 14px; padding: 12px 10px; }
@@ -662,8 +659,8 @@ body.tv .card span { font-size: 54px; }
     header { position: relative; flex-direction: column; gap: 12px; padding: 16px 12px; }
     .logo-area { gap: 10px; width: 100%; justify-content: center; }
     .logo { height: 48px; }
-    .logo-area h1 { font-size: 18px; }
-    .logo-area p { font-size: 12px; }
+    .logo-area h1 { font-size: 18px; white-space: normal; }
+    .logo-area p { font-size: 12px; white-space: normal; }
     .clock-area { text-align: center; }
     #clock { font-size: 32px; }
     #date { font-size: 13px; }
@@ -696,33 +693,23 @@ body.tv .card span { font-size: 54px; }
 
 /* ==========================================================
    COMPATIBILIDADE COM TV ANTIGA + MODO TV (?tv=1)
-   (mesmo conteúdo do tv-compat.css, incluído aqui para que o
-   style.css funcione sozinho)
 ========================================================== */
 
-/* 'gap' em flexbox não existe antes do Chrome 84: refeito com margens */
 @media (min-width: 1101px) {
-
     .dashboard { gap: 0; }
     .dashboard > * + * { margin-left: 14px; }
-
     .logo-area { gap: 0; }
     .logo-area > * + * { margin-left: 18px; }
-
     .stat-card { gap: 0; }
     .stat-card > * + * { margin-left: 16px; }
-
     .stat-left { gap: 0; }
     .stat-left > * + * { margin-left: 10px; }
-
     .dashboard-actions { gap: 0; }
     .dashboard-actions > * + * { margin-top: 6px; }
-
     .btn-novo-evento,
     .btn-baixar-excel { gap: 0; }
 }
 
-/* 'inset' não existe antes do Chrome 87 */
 .background,
 .alerta {
     top: 0;
@@ -731,7 +718,6 @@ body.tv .card span { font-size: 54px; }
     left: 0;
 }
 
-/* Modo TV: sem botões de edição, tabela rolando sozinha, cabeçalho fixo */
 body.tv .dashboard-actions { display: none !important; }
 
 body.tv .table-container {
@@ -746,7 +732,6 @@ body.tv .table-container thead th {
     background-color: #1565c0;
 }
 
-/* Mensagem de erro visível na tela (substitui alert) */
 #erroTela {
     display: none;
     position: fixed;
@@ -762,140 +747,16 @@ body.tv .table-container thead th {
     text-align: center;
 }
 
-/* ==========================================================
-   CABEÇALHO PADRONIZADO
-   - barra do próximo evento à esquerda; logo + título à direita
-   - logo + título + subtítulo numa linha só, sem quebrar nem
-     invadir a borda
-   - a barra tem a largura do texto e só encolhe (cortando o texto)
-     se faltar espaço, em vez de espremer o título
-========================================================== */
-header {
-    height: auto;
-    min-height: 90px;
-    padding: 8px 48px;
-    align-items: center;
-}
-
-/* A barra tem a largura do próprio texto (como no desenho original).
-   Só encolhe — cortando o texto — se faltar espaço, para nunca
-   espremer o logo e o título. */
-#barraEvento {
-    flex: 0 1 auto;
-    min-width: 0;
-    margin-right: 32px;
-}
-
-.logo-area {
-    flex: 0 0 auto;
-    align-items: center;
-}
-
-.logo {
-    height: 64px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
-    box-shadow: none;
-}
-
-.logo-area h1 {
-    white-space: nowrap;
-    line-height: 1.15;
-}
-
-.logo-area p {
-    white-space: nowrap;
-    line-height: 1.2;
-    margin-top: 4px;
-}
-
-@media (max-width: 1100px) {
-    header {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 10px 16px;
-        gap: 8px;
-    }
-    .logo-area { order: -1; justify-content: center; }
-    #barraEvento { margin-right: 0; width: 100%; flex: 0 0 auto; font-size: 24px; }
-    .logo-area h1 { font-size: clamp(18px, 3.4vw, 30px); }
-}
-
-@media (max-width: 650px) {
-    .logo-area h1,
-    .logo-area p { white-space: normal; }
-    .logo { height: 52px; }
-}
-
-/* ==========================================================
-   MODO TV: menos efeitos para a rolagem ficar fluida
-   (TVs têm processador fraco; sombras, desfoque e transições
-   em todos os elementos deixam a rolagem "travando")
-========================================================== */
 body.tv * { transition: none !important; }
 body.tv header,
 body.tv .alerta { -webkit-backdrop-filter: none; backdrop-filter: none; }
 body.tv .stat-card:hover,
 body.tv .stat-card.card-gradient:hover { transform: none; }
 
-/* ==========================================================
-   MOTORES ANTIGOS (TV LG webOS 2.0, de 2015)
-   Mesmas animações com prefixo -webkit-. Em navegadores
-   modernos não muda nada (é apenas um apelido).
-========================================================== */
 @-webkit-keyframes ticker { from { -webkit-transform: translateX(0); } to { -webkit-transform: translateX(-100%); } }
 @-webkit-keyframes deslizar { from { -webkit-transform: translateX(100%); } to { -webkit-transform: translateX(-100%); } }
 @-webkit-keyframes pulsar { 0% { -webkit-transform: scale(1); } 50% { -webkit-transform: scale(1.01); } 100% { -webkit-transform: scale(1); } }
 
 #avisos { -webkit-animation: ticker 60s linear infinite; }
 #textoBarra { -webkit-animation: deslizar 18s linear infinite; }
-.evento-urgente { -webkit-animation: pulsar 1s infinite; }
-
-/* ==========================================================
-   ROLAGEM INFINITA (modo TV): o cabeçalho da tabela fica parado
-   e só o corpo da tabela rola. Técnica compatível com TVs antigas.
-   As larguras das colunas são calculadas pelo tv.js (a partir do
-   conteúdo), para que nenhum texto saia da célula.
-========================================================== */
-body.infinita .table-container { overflow: hidden; }
-body.infinita #agenda { display: block; position: relative; overflow: hidden; border-collapse: separate; border-spacing: 0; }
-body.infinita #agenda thead { display: table; width: 100%; table-layout: fixed; position: relative; z-index: 2; }
-body.infinita #agenda tbody {
-    display: block;
-    position: relative;
-    z-index: 1;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    -webkit-transform: translate3d(0, 0, 0);
-    transform: translate3d(0, 0, 0);
-}
-body.infinita #agenda tr {
-    display: table;
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: separate;
-    border-spacing: 0;
-    border-left: 8px solid transparent;   /* mesma largura em todas as linhas e no cabeçalho */
-}
-/* cor da faixa à esquerda (o período vem por cima de "hoje", como no original) */
-body.infinita #agenda tr.evento-hoje { border-left-color: #FF9800; }
-body.infinita #agenda tr.periodo-manha { border-left-color: #42A5F5; }
-body.infinita #agenda tr.periodo-tarde { border-left-color: #FB8C00; }
-body.infinita #agenda tr.periodo-noite { border-left-color: #5E35B1; }
-body.infinita #agenda tr.periodo-integral { border-left-color: #2E7D32; }
-body.infinita #agenda thead tr { border-left-color: #1565c0; }   /* mesma cor do cabeçalho */
-body.infinita #agenda th,
-body.infinita #agenda td { word-wrap: break-word; overflow-wrap: break-word; }
-
-/* ==========================================================
-   MODO TV: a barra do próximo evento tem comprimento definido e vai
-   até encostar no logo (o texto passa em loop dentro dela).
-   Para deixar um espaço entre a barra e o logo, aumente o margin-right.
-========================================================== */
-body.tv #barraEvento {
-    -webkit-flex: 1 1 0px;
-    flex: 1 1 0px;
-    min-width: 0;
-    margin-right: 0;
-}
+.evento-urgente { -webkit-animation: pulsar
