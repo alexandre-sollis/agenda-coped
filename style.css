@@ -559,9 +559,9 @@ footer {
     background: transparent;
 }
 
-.periodo-manha { border-left: 8px solid #42A5F5; }
-.periodo-tarde { border-left: 8px solid #FB8C00; }
-.periodo-noite { border-left: 8px solid #5E35B1; }
+.periodo-matutino { border-left: 8px solid #42A5F5; }
+.periodo-vespertino { border-left: 8px solid #FB8C00; }
+.periodo-noturno { border-left: 8px solid #5E35B1; }
 .periodo-integral { border-left: 8px solid #2E7D32; }
 
 .evento-passado {
